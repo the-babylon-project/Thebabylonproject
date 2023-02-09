@@ -1,25 +1,38 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
+// import Login from './components/Login';
+// import MainMenu from './components/MainMenu';
+// import Matchmaking from './components/Matchmaking';
+// import Profile from './components/Profile';
+// import Game from './game/Game';
 
-function App() {
+import * as PropTypes from "prop-types";
+import Splash from "./components/Splash";
+
+// function Routes(props) {
+//   return null;
+// }
+//
+// Routes.propTypes = {children: PropTypes.node};
+const App = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+      <div className="App">
+          <header className="App-header">
+              <Splash/>
+          </header>
+      </div>
   );
-}
+};
 
 export default App;
+
+// <Router>
+//   <Routes>
+//     <Route exact path="/" element={<Splash/>} />
+//     {/*<Route path="/login" component={Login} />*/}
+//     {/*<Route path="/main-menu" component={MainMenu} />*/}
+//     {/*<Route path="/matchmaking" component={Matchmaking} />*/}
+//     {/*<Route path="/profile" component={Profile} />*/}
+//     {/*<Route path="/game" component={Game} />*/}
+//   </Routes>
+// </Router>
