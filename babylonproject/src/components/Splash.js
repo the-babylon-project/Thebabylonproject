@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import {Engine, FreeCamera, HemisphericLight, Mesh, MeshBuilder, Scene, Vector3} from '@babylonjs/core';
 import * as GUI from "@babylonjs/gui";
 import * as BABYLON from '@babylonjs/core'
+import {useAuth0} from "@auth0/auth0-react";
 
 const mystyle = {
     height: "100%",
@@ -9,6 +10,9 @@ const mystyle = {
 }
 const Splash = () => {
     const canvasRef = useRef(null);
+    const {loginWithRedirect} = useAuth0();
+    //Not sure if this is needed, or if I can roll it into above
+    const {isAuthenticated, logout} = useAuth0();
 
     useEffect(() => {
         // Create the Babylon.js engine and scene
@@ -73,7 +77,19 @@ const Splash = () => {
         });
     }, []);
 
-    return <canvas ref={canvasRef} style={mystyle} />;
+    return  (
+    <div>
+        <canvas ref={canvasRef} style={mystyle} />
+        <button onClick = {() => loginWithRedirect()}>Login</button>
+        <button onClick = {() => {
+            logout({
+                logoutParams: {
+                    returnTo: window.location.origin
+                }
+            })
+        }}>Log out</button>
+    </div>
+    )
 };
 
 export default Splash;

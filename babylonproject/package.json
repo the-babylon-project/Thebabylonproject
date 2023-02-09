@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@auth0/auth0-react": "^2.0.0",
     "@babylonjs/core": "^5.46.0",
     "@babylonjs/gui": "^5.46.0",
     "@babylonjs/loaders": "^5.46.0",
