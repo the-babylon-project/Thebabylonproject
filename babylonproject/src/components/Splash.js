@@ -2,17 +2,15 @@ import {Engine, FreeCamera, HemisphericLight, Mesh, MeshBuilder, Scene, Vector3}
 import * as GUI from "@babylonjs/gui";
 import * as BABYLON from '@babylonjs/core'
 import {
-    AmmoJSPlugin,
     Engine,
     FreeCamera,
     HemisphericLight,
     Mesh,
-    MeshBuilder, PhysicsEngine,
+    MeshBuilder,
     Scene,
     Vector3
 } from '@babylonjs/core';
 import {useAuth0} from "@auth0/auth0-react";
-
 const mystyle = {
     height: "100%",
     width: "100%"
@@ -96,9 +94,9 @@ const Splash = () => {
 
         //Setup Physics
         const gravity = new BABYLON.Vector3(0, -30, 0);
-        const ammo = new AmmoJSPlugin(true);
+        // const ammo = new AmmoJSPlugin(true);
         // Add the AmmoJSPlugin to the scene
-        scene.enablePhysics(gravity, ammo);
+        scene.enablePhysics(gravity, new BABYLON.CannonJSPlugin(true, 10));
         sphere.physicsImpostor = new BABYLON.PhysicsImpostor(sphere, BABYLON.PhysicsImpostor.BoxImpostor, {
             mass: 1,
             restitution: 0.7
@@ -108,6 +106,7 @@ const Splash = () => {
             friction: 0,
             restitution: 0.7
         }, scene);
+        sphere.parent = motionPlane;
         engine.runRenderLoop(() => {
             scene.render();
         });
