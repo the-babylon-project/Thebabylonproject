@@ -1,13 +1,23 @@
-import React, { useRef, useEffect } from 'react';
 import {Engine, FreeCamera, HemisphericLight, Mesh, MeshBuilder, Scene, Vector3} from '@babylonjs/core';
 import * as GUI from "@babylonjs/gui";
 import * as BABYLON from '@babylonjs/core'
+import {
+    AmmoJSPlugin,
+    Engine,
+    FreeCamera,
+    HemisphericLight,
+    Mesh,
+    MeshBuilder, PhysicsEngine,
+    Scene,
+    Vector3
+} from '@babylonjs/core';
 import {useAuth0} from "@auth0/auth0-react";
 
 const mystyle = {
     height: "100%",
     width: "100%"
 }
+
 const Splash = () => {
     const canvasRef = useRef(null);
     const {loginWithRedirect} = useAuth0();
@@ -27,24 +37,32 @@ const Splash = () => {
         camera.attachControl(canvasRef.current, true);
 
         //Light
-        const light = new HemisphericLight("light1", new Vector3(0,1,0), scene);
+        const light = new HemisphericLight("light1", new Vector3(0, 1, 0), scene);
         light.intensity = 0.7;
 
-        const ground = MeshBuilder.CreateGround("ground", { width: 100, height: 10000 },  scene);
+        const ground = MeshBuilder.CreateGround("ground", {width: 100, height: 10000}, scene);
         ground.position.z = 4900;
         // todo:
         // ground.absolutePosition;
 
-        const box = MeshBuilder.CreateBox("track", { height: 100, width: 100, depth: 10000, sideOrientation: Mesh.BACKSIDE }, scene);
+        const box = MeshBuilder.CreateBox("track", {
+            height: 100,
+            width: 100,
+            depth: 10000,
+            sideOrientation: Mesh.BACKSIDE
+        }, scene);
         box.position.y = 50;
         box.position.z = 4900;
 
-        const sphere = MeshBuilder.CreateSphere("player", { diameter: 2, segments: 32 }, scene);
+        //create sphere representing player.
+        const sphere = MeshBuilder.CreateSphere("player", {diameter: 2, segments: 32}, scene);
         sphere.position = new Vector3(0, 0, -50);
-        const plane = MeshBuilder.CreatePlane("motionPlane", { width: 100, height: 100}, scene);
-        plane.position.z = 100;
-        plane.position.y = 50;
-        plane.isVisible = false;
+
+        //create motionPlane
+        const motionPlane = new BABYLON.MeshBuilder.CreatePlane("motionPlane", {size: 100}, scene);
+        motionPlane.position.z = 100;
+        motionPlane.position.y = 50;
+        // motionPlane.isVisible = false;
 
         // Create an animation for the plane
         const frameRate = 1;
@@ -52,29 +70,51 @@ const Splash = () => {
         const keyFrames = [];
         const path = [];
         const movement = 10000;
+
         for (let z = 0; z <= movement; z += 100) {
-            path.push(new Vector3(0, 50, z));
+            path.push(new BABYLON.Vector3(0, 50, z));
         }
+
+
         for (let i = 0; i < path.length; i++) {
             keyFrames.push({
                 frame: i,
                 value: path[i]
             });
         }
+
         zSlide.setKeys(keyFrames);
-        plane.animations.push(zSlide);
-        scene.beginAnimation(plane, 0, path.length - 1, true);
+        motionPlane.animations.push(zSlide);
 
-        //Set player as camera parent
+        scene.beginAnimation(motionPlane, 0, path.length - 1, true);
+
+        sphere.position = new BABYLON.Vector3(0, 25, -50);
+
         camera.parent = sphere;
+        camera.position = new BABYLON.Vector3(0, 25, -75)
 
-        //Make motionPlane the player's daddy
-        sphere.parent = plane;
 
-        // Render the scene
+        //Setup Physics
+        const gravity = new BABYLON.Vector3(0, -30, 0);
+        const ammo = new AmmoJSPlugin(true);
+        // Add the AmmoJSPlugin to the scene
+        scene.enablePhysics(gravity, ammo);
+        sphere.physicsImpostor = new BABYLON.PhysicsImpostor(sphere, BABYLON.PhysicsImpostor.BoxImpostor, {
+            mass: 1,
+            restitution: 0.7
+        }, scene);
+        ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, {
+            mass: 0,
+            friction: 0,
+            restitution: 0.7
+        }, scene);
         engine.runRenderLoop(() => {
             scene.render();
         });
+
+        return () => {
+            engine.dispose();
+        };
     }, []);
 
     return  (
@@ -93,16 +133,3 @@ const Splash = () => {
 };
 
 export default Splash;
-
-// Create a GUI
-// const gui = GUI.AdvancedDynamicTexture.CreateFullscreenUI("ui1", true, scene);
-
-// const button = GUI.Button.CreateSimpleButton("but", "Login");
-// button.width = "150px";
-// button.height = "40px";
-// button.color = "white";
-// button.background = "green";
-// button.onPointerUpObservable.add(() => {
-//     console.log("Login button clicked");
-// });
-// gui.addControl(button);
