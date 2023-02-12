@@ -18,6 +18,8 @@ const App = () => {
   return (
       <div className="App">
           <header className="App-header">
+              <script src="https://cdn.babylonjs.com/babylon.js"></script>
+              <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
               <Splash/>
           </header>
       </div>

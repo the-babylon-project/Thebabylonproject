@@ -7,13 +7,13 @@ module.exports = {
         path: path.resolve(__dirname, 'dist')
     },
     node: {
-        fs: 'empty'
+        // fs: 'empty'
     },
     resolve: {
         fallback: {
-            path: { "path": require.resolve("path-browserify") },
-            stream: {"stream": require.resolve("stream-browserify")},
-            fs: false
+        //     path: { "path": require.resolve("path-browserify") },
+        //     stream: {"stream": require.resolve("stream-browserify")},
+        //     fs: false
         }
     },
     module: {
