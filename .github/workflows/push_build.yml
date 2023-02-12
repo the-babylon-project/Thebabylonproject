@@ -1,0 +1,28 @@
+# # https://docs.oracle.com/en-us/iaas/tools/oci-cli/3.22.4/oci_cli_docs/cmdref/os/object/sync.html
+# # oci os object sync --bucket-name "testing-build" --src-dir [../]build/
+# # https://github.com/marketplace/actions/run-an-oracle-cloud-infrastructure-oci-cli-command
+# Commented out because we do not have the infrastructure set up(object storage)
+
+# name: Run an Oracle Cloud Infrastructure (OCI) CLI command
+# uses: oracle-actions/run-oci-cli-command@v1.1.1
+# on: 
+#   push:
+#     branches:
+#       - main
+# jobs:
+#   my-instances:
+#     runs-on: ubuntu-latest
+#     name: Upload the new build to the test bucket
+#     env:
+#       OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
+#       OCI_CLI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
+#       OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
+#       OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+#       OCI_CLI_REGION: ${{ secrets.OCI_CLI_REGION }}
+#     steps:
+#       - name: Sync up the build directory with the bucket
+#         uses: oracle-actions/run-oci-cli-command@v1.1
+#         id: sync-test-build
+#         with:
+#           command: 'os object sync --bucket-name "testing-build" --src-dir [../]build/'
+
