@@ -1,6 +1,14 @@
 provider "oci" {
   region = var.region
 }
+# provider "oci" {
+#   region           = var.region
+#   tenancy_ocid     = var.tenancy_ocid
+#   user_ocid        = var.user_ocid
+#   fingerprint      = var.fingerprint
+#   private_key_path = var.private_key_path
+# }
+
 
 module "vcn" {
   source  = "oracle-terraform-modules/vcn/oci"
@@ -163,4 +171,13 @@ resource "oci_containerengine_node_pool" "k8s_node_pool" {
   }
 
   ssh_public_key = file(var.ssh_public_key)
+}
+
+
+
+#Bucket for the frontend; setting name and namespace somewhat arbitrarily
+resource "oci_objectstorage_bucket" "dev_bucket" {
+  compartment_id = var.compartment_id
+  name = "dev_bucket"
+  namespace = "hackathon"
 }
