@@ -236,3 +236,14 @@ resource "oci_artifacts_container_repository" "docker_repository" {
   is_public    = false
 }
 
+data "oci_objectstorage_namespace" "user_namespace" {
+  compartment_id = var.compartment_id
+}
+
+resource "oci_objectstorage_bucket" "dev_bucket" {
+  compartment_id = var.compartment_id
+  name = "dev_bucket"
+  namespace = data.oci_objectstorage_namespace.user_namespace.namespace
+  
+  access_type = "ObjectRead"
+}

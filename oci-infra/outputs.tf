@@ -9,3 +9,7 @@ output "public_subnet_id" {
 output "node_pool_id" {
   value = oci_containerengine_node_pool.k8s_node_pool.id
 }
+
+output "buckets" {
+  value = oci_objectstorage_bucket.dev_bucket.name
+}
