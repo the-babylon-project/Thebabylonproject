@@ -45,7 +45,7 @@ const Splash = () => {
         ground.position.z = 4900;
         // todo:
         // ground.absolutePosition;
-        const gravity = new BABYLON.Vector3(0, 0, 1);
+        const gravity = new BABYLON.Vector3(0, 0, 0);
         scene.enablePhysics(gravity, new BABYLON.CannonJSPlugin(true, 10));
         // const box = MeshBuilder.CreateBox("track", {
         //     height: 100,
@@ -89,19 +89,19 @@ const Splash = () => {
         camera.position = new BABYLON.Vector3(0, 25, -75)
 
         const sphere = new MeshBuilder.CreateSphere("player", {segments: 32, diameter: 2}, scene);
-
+        sphere.position.z = 25;
         // Create a material for the sphere
         const material = new StandardMaterial("material", scene);
         material.emissiveColor = new Color3(1, 1, 1);
         material.emissiveIntensity = 1.0;
-        material.specularColor = new Color3(0, 0, 0);
+        material.specularColor = new Color3(0, 0, 1);
         // material.diffuseTexture = new Texture("./assets/textures.png", scene);
         const glowLayer = new GlowLayer('glow', scene);
         glowLayer.addIncludedOnlyMesh(sphere);
         glowLayer.intensity = 1.0;
         glowLayer.blurKernelSize = 64;
         glowLayer.customEmissiveColorSelector = (mesh, subMesh, material, result) => {
-            result.set(1, 1, 1, 1);
+            result.set(2, 1, 1, 1);
         };
 
         // Apply the material to the sphere
@@ -109,8 +109,8 @@ const Splash = () => {
 
         //Setup Physics
         sphere.physicsImpostor = new BABYLON.PhysicsImpostor(sphere, BABYLON.PhysicsImpostor.SphereImpostor, {
-            mass: 1,
-            friction: 1,
+            mass: 0,
+            friction: 0,
             restitution: 0.000000001
         }, scene);
         // ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, {
@@ -119,112 +119,142 @@ const Splash = () => {
         //     restitution: 0.7
         // }, scene);
 
-        function generateObstacles(scene) {
-            const obstacles = [];
+        function createWallObs(){
 
-            // Set up obstacle options
-            const obstacleOptions = [
-                {
-                    type: 'vertical',
-                    width: 5,
-                    height: 50,
-                    depth: 5,
-                },
-                {
-                    type: 'horizontal',
-                    width: 50,
-                    height: 5,
-                    depth: 5,
-                },
-                {
-                    type: 'diagonal',
-                    width: 50,
-                    height: 50,
-                    depth: 5,
-                },
-                {
-                    type: 'square',
-                    width: 50,
-                    height: 50,
-                    depth: 5,
-                },
-            ];
+            // Generate random x and y positions for the center of the window
+            const randomX = Math.floor(Math.random() * 96 - 42);
+            const randomY = Math.floor(Math.random() * 100 -6);
+            const startPointLeft = randomX - 6;
+            const startPointRight = randomX + 6;
+            const startPointTop = randomY + 6;
+            const startPointBot = randomY - 6;
 
-            // Generate obstacles with windows
-            let lastObstacleZ = -50;
-            while (lastObstacleZ < 10000) {
-                // Choose a random obstacle type and position
-                const obstacle = obstacleOptions[Math.floor(Math.random() * obstacleOptions.length)];
-                const position = new BABYLON.Vector3(
-                    (Math.random() - 0.5) * 90,  // Random X position
-                    Math.random() * 50 + 25,    // Random Y position
-                    lastObstacleZ + 100 + Math.random() * 20,  // Spacing between obstacles
-                );
+            // Calculate the positions and dimensions of the four walls
+            const leftWallWidth = Math.abs(-50 - startPointLeft);
+            const leftWallX = Math.round(-50 + (leftWallWidth / 2));
 
-                // Create obstacle mesh
-                const obstacleMesh = BABYLON.MeshBuilder.CreateBox(
-                    `obstacle-${lastObstacleZ}`,
-                    obstacle,
-                    scene,
-                );
-                obstacleMesh.position.copyFrom(position);
+            const rightWallWidth = Math.abs(50 - startPointRight);
+            const rightWallX = 50 - (rightWallWidth / 2);
 
-                // Create window if required
-                if (Math.random() < 0.5) {
-                    const windowWidth = Math.random() * obstacle.width * 0.8;
-                    const windowHeight = Math.random() * obstacle.height * 0.8;
-                    const windowDepth = 0.1;
-                    const windowPosition = new BABYLON.Vector3(
-                        (Math.random() - 0.5) * (obstacle.width - windowWidth),
-                        (Math.random() - 0.5) * (obstacle.height - windowHeight),
-                        obstacle.depth / 2,
-                    );
-                    const windowMesh = BABYLON.MeshBuilder.CreateBox(
-                        `window-${lastObstacleZ}`,
-                        {
-                            width: windowWidth,
-                            height: windowHeight,
-                            depth: windowDepth,
-                        },
-                        scene,
-                    );
-                    // Set window physics properties
-                    windowMesh.physicsImpostor = new BABYLON.PhysicsImpostor(
-                        windowMesh,
-                        BABYLON.PhysicsImpostor.BoxImpostor,
-                        {mass: 0, restitution: 0},
-                        scene,
-                    );
-                    // Set obstacle physics properties
-                    obstacleMesh.physicsImpostor = new BABYLON.PhysicsImpostor(
-                        obstacleMesh,
-                        BABYLON.PhysicsImpostor.BoxImpostor,
-                        {mass: 0, restitution: 0},
-                        scene,
-                    );
-                    windowMesh.position.copyFrom(position.add(windowPosition));
-                    windowMesh.parent = obstacleMesh;
+            const topWallHeight = 100 - startPointTop;
+            const topWallY = 100 - (topWallHeight / 2);
+
+            const bottomWallHeight = startPointBot
+            const bottomWallY = startPointBot / 2;
+
+            // Create the four walls
+            const leftWallOb = BABYLON.MeshBuilder.CreatePlane("leftWallOb", {width: leftWallWidth, height: 100}, scene);
+            leftWallOb.position.x = leftWallX;
+            leftWallOb.position.y = 50;
+
+            const rightWallOb = BABYLON.MeshBuilder.CreatePlane("rightWallOb", {width: rightWallWidth, height: 100}, scene);
+            rightWallOb.position.x = rightWallX;
+            rightWallOb.position.y = 50;
+
+            const topWallOb = BABYLON.MeshBuilder.CreatePlane("topWallOb", {width: 12, height: topWallHeight}, scene);
+            topWallOb.position.x = randomX;
+            topWallOb.position.y = topWallY;
+            topWallOb.material = material;
+
+            const bottomWallOb = BABYLON.MeshBuilder.CreatePlane("bottomWallOb", {width: 12, height: bottomWallHeight}, scene);
+            bottomWallOb.position.x = randomX;
+            bottomWallOb.position.y = bottomWallY;
+            bottomWallOb.material = material;
+            // Merge the four meshes into one
+            const leaderWall = new BABYLON.Mesh("leaderWall", scene);
+            leftWallOb.parent = leaderWall;
+            rightWallOb.parent = leaderWall;
+            topWallOb.parent = leaderWall;
+            bottomWallOb.parent = leaderWall;
+            // leaderWall.physicsImpostor = new BABYLON.PhysicsImpostor(leaderWall, BABYLON.PhysicsImpostor.BoxImpostor, {
+            //     mass: 0,
+            //     friction: 0,
+            //     restitution: 0
+            // }, scene);
+
+            leaderWall.position.z = 100;
+            startLeaderWallAnimation(leaderWall);
+
+            return leaderWall;
+        }
+        var newWallOb = createWallObs();
+        function startLeaderWallAnimation(newWallOb) {
+            // Define the initial distance between walls and speed
+            let distanceBetweenWalls = 10;
+            let speed = 0.05;
 
 
+            const frameRate = 3;
+            const leaderWallAnimation = new BABYLON.Animation("zSlide", "position", frameRate, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+            const keyFrames = [];
+            const path = [];
+            const movement = 0;
+            for (let z = 500; z >= movement; z -= 25) {
+                path.push(new Vector3(0, 50, z));
+            }
+            for (let i = 0; i < path.length; i++) {
+                keyFrames.push({
+                    frame: i,
+                    value: path[i]
+                });
+            }
+            // Set the animation keys
+            leaderWallAnimation.setKeys(keyFrames);
 
-                    // // Set material for window
-                    // const windowMaterial = new BABYLON.StandardMaterial(`window-material-${lastObstacleZ}`, scene);
-                    // windowMaterial.diffuseColor = BABYLON.Color3.Black();
-                    // windowMaterial.emissiveColor = BABYLON.Color3.Yellow();
-                    // windowMaterial.alpha = 0.5;
-                    // windowMesh.material = windowMaterial;
+            // Set the animation speed ratio:
+            leaderWallAnimation.speedRatio = speed;
+
+            // Attach the animation to the leader wall
+            newWallOb.animations.push(leaderWallAnimation);
+
+            // Start the animation and increase the speed and distance between walls based on time
+            setInterval(() => {
+                // Increase the animation speed by 0.01
+                speed += 1;
+                leaderWallAnimation.speedRatio = speed;
+
+                // Increase the distance between walls by a factor of 1.5
+                distanceBetweenWalls *= 1.5;
+
+                // Update the animation keys
+                // keys[1].value = newWallOb.position.z - distanceBetweenWalls;
+                // leaderWallAnimation.setKeys(path);
+
+            }, 10000); // Run the function every 10 seconds
+        }
+
+// Call the function to start the animation
+
+        // const newWallOb = createWallObs();
+        // startLeaderWallAnimation(newWallOb);
+
+        function makeWallandMove() {
+            // Set the interval for generating walls (in milliseconds)
+            const interval = 10000;
+
+            // Set the time to run the loop for (in milliseconds)
+            const totalTime = 60000;
+
+            // Get the current time
+            const startTime = Date.now();
+
+            // Loop until the total time has elapsed
+            while (Date.now() - startTime < totalTime) {
+                const newWall = createWallObs();
+                startLeaderWallAnimation(newWall);
+                if (Date.now() % interval === 0) {
+                    setTimeout(() => newWall.dispose(), 15000); // Dispose of the wall after 10 seconds
                 }
             }
-            return obstacles;
         }
-        generateObstacles(scene);
-
 
         let isSpaceKeyPressed = false;
         let isLeftPressed = false;
         let isRightPressed = false;
         const sphereSpeed = .9;
-        const sphereHorizontal = 0.45;
+
+        // const sphereSpeed = 0;
+        const sphereHorizontal = 1;
         // Add keyboard event listeners
         window.addEventListener("keydown", (event) => {
             if (event.code === "Space") {
@@ -249,6 +279,16 @@ const Splash = () => {
                 isRightPressed = false;
             }
         });
+        window.addEventListener("keydown", (event) => {
+            if (event.altKey && event.shiftKey && event.ctrlKey && event.code === "KeyI") {
+                if (scene.debugLayer.isVisible()) {
+                    scene.debugLayer.hide();
+                } else {
+                    scene.debugLayer.show();
+                }
+            }
+        });
+
 
 // Render loop
         engine.runRenderLoop(() => {
@@ -282,10 +322,16 @@ const Splash = () => {
 
 
             if (isSpaceKeyPressed) {
-                sphere.position.y += sphereSpeed/1.5;
-            } else {
-                sphere.position.y -= sphereSpeed;
+                const physicsImpostor = sphere.physicsImpostor;
+                const upwardImpulse = new BABYLON.Vector3(0, 3, 0); // Change the Y value to adjust the strength of the impulse
+                physicsImpostor.applyImpulse(upwardImpulse, sphere.getAbsolutePosition());
+
             }
+            //     sphere.position.y += sphereSpeed * 6;
+            // }
+            // //     else {
+            // //     sphere.position.y -= sphereSpeed;
+            // // }
             if (isLeftPressed) {
                 sphere.position.x -= sphereHorizontal;
             }
