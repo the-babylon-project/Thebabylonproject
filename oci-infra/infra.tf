@@ -49,6 +49,28 @@ resource "oci_core_security_list" "private_subnet_sl" {
     source_type = "CIDR_BLOCK"
     protocol    = "all"
   }
+
+  ingress_security_rules {
+    stateless   = false
+    source      = "10.0.0.0/24"
+    source_type = "CIDR_BLOCK"
+    protocol    = "6"
+    tcp_options {
+      min = 10256
+      max = 10256
+    }
+  }
+
+  ingress_security_rules {
+    stateless   = false
+    source      = "10.0.0.0/24"
+    source_type = "CIDR_BLOCK"
+    protocol    = "6"
+    tcp_options {
+      min = 31600
+      max = 31600
+    }
+  }
 }
 
 resource "oci_core_security_list" "public_subnet_sl" {
@@ -63,6 +85,40 @@ resource "oci_core_security_list" "public_subnet_sl" {
     destination_type = "CIDR_BLOCK"
     protocol         = "all"
   }
+  
+  egress_security_rules {
+    stateless        = false
+    destination      = "10.0.1.0/24"
+    destination_type = "CIDR_BLOCK"
+    protocol         = "6"
+    tcp_options {
+      min = 31600
+      max = 31600
+    }
+  }
+
+  egress_security_rules {
+    stateless        = false
+    destination      = "10.0.1.0/24"
+    destination_type = "CIDR_BLOCK"
+    protocol         = "6"
+    tcp_options {
+      min = 10256
+      max = 10256
+    }
+  }
+
+  ingress_security_rules {
+    protocol    = "6"
+    source      = "0.0.0.0/0"
+    source_type = "CIDR_BLOCK"
+    stateless   = false
+
+    tcp_options {
+      max = 80
+      min = 80
+    }
+  } 
 
   ingress_security_rules {
     stateless   = false
@@ -132,23 +188,23 @@ data "oci_identity_availability_domains" "ads" {
   compartment_id = var.compartment_id
 }
 
+locals {
+  azs = data.oci_identity_availability_domains.ads.availability_domains[*].name
+}
+
 resource "oci_containerengine_node_pool" "k8s_node_pool" {
   cluster_id         = oci_containerengine_cluster.k8s_cluster.id
   compartment_id     = var.compartment_id
   kubernetes_version = "v1.25.4"
   name               = "babylon-node-pool"
+  
   node_config_details {
-    placement_configs {
-      availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-      subnet_id           = oci_core_subnet.vcn_private_subnet.id
-    }
-    placement_configs {
-      availability_domain = data.oci_identity_availability_domains.ads.availability_domains[1].name
-      subnet_id           = oci_core_subnet.vcn_private_subnet.id
-    }
-    placement_configs {
-      availability_domain = data.oci_identity_availability_domains.ads.availability_domains[2].name
-      subnet_id           = oci_core_subnet.vcn_private_subnet.id
+    dynamic placement_configs {
+      for_each = local.azs
+      content {
+        availability_domain = placement_configs.value
+        subnet_id           = oci_core_subnet.vcn_private_subnet.id
+      }
     }
     size = 2
   }
@@ -173,11 +229,10 @@ resource "oci_containerengine_node_pool" "k8s_node_pool" {
   ssh_public_key = file(var.ssh_public_key)
 }
 
-
-
-#Bucket for the frontend; setting name and namespace somewhat arbitrarily
-resource "oci_objectstorage_bucket" "dev_bucket" {
+resource "oci_artifacts_container_repository" "docker_repository" {
   compartment_id = var.compartment_id
-  name = "dev_bucket"
-  namespace = "hackathon"
+  display_name   = "babylon-kubernetes-nginx"
+  is_immutable = false
+  is_public    = false
 }
+
