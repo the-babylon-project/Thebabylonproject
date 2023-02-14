@@ -1,30 +1,44 @@
-const path = require('path');
+const path = require("path");
+const fs = require('fs');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const appDirectory = fs.realpathSync(process.cwd());
 
 module.exports = {
-    entry: './src/index.js',
+    entry: path.resolve(appDirectory, "src/app.ts"),
     output: {
-        filename: 'bundle.js',
-        path: path.resolve(__dirname, 'dist')
-    },
-    node: {
-        fs: 'empty'
+        path: path.resolve(appDirectory, "dist"),
+        //name for the js file that is created/compiled in memory
+        filename: 'js/babylonBundle.js'
     },
     resolve: {
-        fallback: {
-            path: { "path": require.resolve("path-browserify") },
-            stream: {"stream": require.resolve("stream-browserify")},
-            fs: false
-        }
+        // extensions: [".ts"]
+        extensions: [".tsx", ".ts", ".js"]
+    },
+    devServer: {
+        host: '0.0.0.0',
+        port: 8081,
+        static: path.resolve(appDirectory, "public"), //tells webpack to serve from the public folder
+        // publicPath: '/',
+        hot: true
     },
     module: {
         rules: [
+            // {test: /\.tsx?$/,
+            // loader: "ts-loader"}
             {
-                test: /\.js$/,
-                exclude: /node_modules/,
-                use: {
-                    loader: 'babel-loader',
-                }
-            }
+                test: /\.tsx?$/,
+                use: "ts-loader",
+                exclude: /node_modules/
+            },
         ]
-    }
+    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            inject: true,
+            template: path.resolve(appDirectory, "public/index.html")
+        }),
+        new CleanWebpackPlugin()
+    ],
+    mode: "development"
 };

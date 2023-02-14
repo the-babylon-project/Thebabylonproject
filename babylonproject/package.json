@@ -1,6 +1,8 @@
 {
   "name": "babylonproject",
   "version": "0.1.0",
+  "description": "3D babylon game",
+  "main": "index.js",
   "private": true,
   "dependencies": {
     "@auth0/auth0-react": "^2.0.0",
@@ -15,30 +17,29 @@
     "prop-types": "^15.8.1",
     "regenerator-runtime": "^0.13.11",
     "stream-browserify": "^3.0.0",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "@babylonjs/serializers": "^5.46.0"
+
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "build": "webpack",
+    "start": "webpack serve",
+    "start:dev": "webpack serve --mode=development"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "devDependencies": {
+    "@babylonjs/core": "^5.46.0",
+    "@babylonjs/gui": "^5.18.0",
+    "@babylonjs/inspector": "^5.46.0",
+    "@babylonjs/loaders": "^5.18.0",
+    "@types/react": "^17.0.1",
+    "@types/react-dom": "^17.0.0",
+    "clean-webpack-plugin": "^4.0.0",
+    "html-loader": "^4.2.0",
+    "html-webpack-plugin": "^5.5.0",
+    "ts-loader": "^9.4.2",
+    "typescript": "^4.9.5",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^4.10.0",
+    "webpack-dev-server": "^4.11.1"
   }
 }
