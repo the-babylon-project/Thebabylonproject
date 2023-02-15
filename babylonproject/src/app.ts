@@ -194,7 +194,7 @@ class App {
         preGameBtn.color = "white";
         preGameBtn.top = "-14px";
         preGameBtn.thickness = 0;
-        preGameBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        preGameBtn.verticalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
         imageRect.addControl(preGameBtn);
         const gameBtn = Button.CreateSimpleButton("game", "GAME");
         gameBtn.fontFamily = "Viga";
