@@ -2,7 +2,7 @@ import {
     Scene,
     TransformNode,
     SceneLoader,
-    PBRMetallicRoughnessMaterial,
+    PBRMetallicRoughnessMaterial, Mesh, MeshBuilder, StandardMaterial, GlowLayer,
 } from "@babylonjs/core";
 
 import {WallObstacle} from "./wallObstacle";
@@ -31,68 +31,185 @@ export class Environment {
 
         const assets = await this._loadAssets();
 
-        assets.allMeshes.forEach(m => {
-            m.receiveShadows = true;
-            m.checkCollisions = true;
-
-            if (m.name == "leftWall" || m.name == "rightWall" || m.name == "ceiling") {
-                //dont check for collisions, dont allow for raycasting
-                m.checkCollisions = false;
-                m.isPickable = false;
-            }
-            //areas that will use box collisions
-            if (m.name.includes("boxWallOb")) {
-                m.checkCollisions = true;
-                m.isPickable = false;
-            }
-        });
+        //this is loading the whole scene, iterating through the elements and doing check collision and shadow setters.
+        //the purpose of brining in load assets is to add collisons and shadows, and make ispickable or not on every part.
+        // assets.allMeshes.forEach(m => {
+        //     m.receiveShadows = true;
+        //     m.checkCollisions = true;
+        //
+        //     if (m.name == "leftWall" || m.name == "rightWall" || m.name == "ceiling") {
+        //         //dont check for collisions, dont allow for raycasting
+        //         m.checkCollisions = false;
+        //         m.isPickable = false;
+        //     }
+        //     //areas that will use box collisions
+        //     if (m.name.includes("boxWallOb")) {
+        //         m.checkCollisions = true;
+        //         m.isPickable = false;
+        //     }
+        // });
+        return assets;
     }
     //Load all necessary meshes for the environment
     public async _loadAssets() {
-        //loads game environment
-        // Can create track in playground and export to glb, import from that file.
+        //TODO: pick out the parent 'Mesh' of these, when we call this in load, it will iterate through each parent mesh
+        // and add the params receive shadoes, is pickable, and checkCollisions..
+        //load track
         const result = await SceneLoader.ImportMeshAsync(null, "./models/", "track.glb", this._scene);
-
-        let env = result.meshes[0];
+        let env = result.meshes[0]; //gets root
         let trackMeshes = env.getChildMeshes();
-        //THIS LOADS A SINGLE LANTERN MESH.
-        //WE CAN PROBABLY LOAD ALL OF THE WALLOBSTACLE MESHES HERE WITH AN ASYNC FUNCTION, WHICH WILL MAKE FOR A PRESET COURSE.
-        //TODO: Rework...IDK if we even need it created there.
-        const res = await WallObstacle.createWallOb(this._scene);
 
-        //extract the actual lantern mesh from the root of the mesh that's imported, dispose of the root
-        //what he's doing originally is lantern = resultOfLoadLantern[0].GetChildren()[0];
-        //so it loads all, gets all but parent, which is not needed i guess?
-        let wallObDad = res.parent;
-        let wallOb = wallObDad.getChildMeshes();
-        wallObDad = null;
-        res.dispose();
 
+        //load modified wall obstacles.
+        const wallObstaclesArray = await this._modifyWallObs(); //this brings in wall obstacle class.
+
+        // let wallObParent =???
+        // wallObDad.parent = null;
+        // res.meshes[0].dispose();
+
+        env.dispose();
         return {
-            env: env,
-            allMeshes: trackMeshes,
-            // animationGroups: animGroup
+            //return the track and the wall obstacles as meshes.
+            trackMeshes: trackMeshes,
+            wallObstacles: wallObstaclesArray,
         }
     }
-    private async _createWallCourse(assets){
+    private async _modifyWallObs(){
+        //TODO: implement material for each obstacle wall and add glow
+
+
         //This takes in createWallOb and iterates it with determinations.
         const wallObHolder = new TransformNode("wallObHolder", this._scene);
-        //MODIFY THIS TO ACCOMPLISH SETTING STAGE
-        for (let i = 0; i < 10; i++) {
-            //ITERATE EVERY WALL CREATION
-            let wallObInstance = WallObstacle.createWallOb(this._scene); //bring in loadWallOb
 
-            wallObInstance.isVisible = true;
-            wallObInstance.setParent(wallObHolder);
+        let wallObWhole = await SceneLoader.ImportMeshAsync(null, './models/', 'wallOb_40+10.glb');
 
-            //TODO:this should be put into it's own function to make all the walls. it should then go into _loadAssets()
-            let newWallOb = new WallObstacle(this._lightmtl, wallObInstance, this._scene, assets.env.getChildTransformNodes(false).find(m => m.name === "wallOb " + i).getAbsolutePosition());
+        // Get the "wallparent" nodes
+        let wallParents = wallObWhole.meshes.filter(mesh => mesh.name.startsWith("wallsParent"));
+        //This includes ['wallParent + positionZ'(undefined mesh), leftWallOb, rightWallOb, topWallOb, botWallOb]
 
+        // Iterate through each "wallparent" node
+        wallParents.forEach(wallParent => {
+            // Get the box child
+
+            let boxChild = wallParent.getChildMeshes(true, mesh => mesh.name.startsWith("boxOb"))[0] as Mesh;
+
+            // Apply a glow effect to the box child
+            let glowLayer = new GlowLayer("glow", this._scene);
+            //TODO: customize glow
+            glowLayer.intensity = 1.0;
+            glowLayer.addIncludedOnlyMesh(boxChild);
+            boxChild.isVisible = false;
+
+            // Iterate through the wall children
+            let wallChildren = wallParent.getChildMeshes(true, mesh => mesh.name.includes("Wall"));
+            wallChildren.forEach(wallChild => {
+                // TODO: do something for each wall.
+                // wallChild.checkCollisions = true;
+                wallChild.isVisible = true;
+            });
+            wallParent.setParent(wallObHolder);
+            let newWallOb = new WallObstacle(this._lightmtl, boxChild, this._scene, wallParent.getChildTransformNodes(true).find(m => m.name === "boxOb").getAbsolutePosition(), glowLayer);
             this._wallObs.push(newWallOb);
-        }
+        });
         //probably dispose after push
         return this._wallObs;
     }
+    // --USED IN PLAYGROUND TO CREATE OBSTACLES, KEPT FOR REFERENCE--
+    // async createWallObs(scene: Scene, material: StandardMaterial): Promise<Mesh> {
+    //     // Create the parent mesh that will hold all the walls
+    //     // Create the parent mesh that will hold all the walls
+    //     const wallsParent = new Mesh("wallsParent" +" " + currentZ, scene);
+    //
+    //     // Generate random x and y positions for the center of the window
+    //     const randomX = Math.floor(Math.random() * 88) - 44;
+    //     const randomY = Math.floor(Math.random() * 88) + 6;
+    //
+    //     const startPointLeft = randomX - 6;
+    //     const startPointRight = randomX + 6;
+    //     const startPointTop = randomY + 6;
+    //     const startPointBot = randomY - 6;
+    //
+    //     // Calculate the positions and dimensions of the four walls
+    //     const leftWallWidth = Math.abs(-50 - startPointLeft);
+    //     const leftWallX = Math.round(-50 + (leftWallWidth / 2));
+    //
+    //     const rightWallWidth = Math.abs(50 - startPointRight);
+    //     const rightWallX = 50 - (rightWallWidth / 2);
+    //
+    //     const topWallHeight = 100 - startPointTop;
+    //     const topWallY = 100 - (topWallHeight / 2);
+    //
+    //     const bottomWallHeight = startPointBot;
+    //     const bottomWallY = startPointBot / 2;
+    //
+    //     // Create the four walls for this iteration
+    //     const leftWallOb = MeshBuilder.CreatePlane("leftWallOb", { width: leftWallWidth, height: 100 }, scene);
+    //     leftWallOb.position.x = leftWallX;
+    //     leftWallOb.position.y = 50;
+    //     leftWallOb.position.z = currentZ;
+    //
+    //     const rightWallOb = MeshBuilder.CreatePlane("rightWallOb", { width: rightWallWidth, height: 100 }, scene);
+    //     rightWallOb.position.x = rightWallX;
+    //     rightWallOb.position.y = 50;
+    //     rightWallOb.position.z = currentZ;
+    //
+    //     const topWallOb = MeshBuilder.CreatePlane("topWallOb", { width: 12, height: topWallHeight }, scene);
+    //     topWallOb.position.x = randomX;
+    //     topWallOb.position.y = topWallY;
+    //     topWallOb.position.z = currentZ;
+    //
+    //     const bottomWallOb = MeshBuilder.CreatePlane("bottomWallOb", { width: 12, height: bottomWallHeight }, scene);
+    //     bottomWallOb.position.x = randomX;
+    //     bottomWallOb.position.y = bottomWallY;
+    //     bottomWallOb.position.z = currentZ;
+    //
+    //     const boxOb = MeshBuilder.CreateBox("boxOb", { size: 6 }, scene);
+    //     boxOb.position.x = randomX;
+    //     boxOb.position.y = randomY;
+    //     boxOb.position.z = currentZ;
+    //
+    //
+    //     // Set wall pickability
+    //     leftWallOb.isPickable = false;
+    //     rightWallOb.isPickable = false;
+    //     topWallOb.isPickable = false;
+    //     bottomWallOb.isPickable = false;
+    //
+    //
+    //     // Add the walls to the parent mesh
+    //     leftWallOb.parent = wallsParent;
+    //     rightWallOb.parent = wallsParent;
+    //     topWallOb.parent = wallsParent;
+    //     bottomWallOb.parent = wallsParent;
+    //     boxOb.parent = wallsParent;
+    //
+    //
+    //     return wallsParent;
+    //
+    // }
+    // --CREATED IN PLAYGROUND, KEPT FOR REFERENCE--
+    // function createWallCourse(scene) {
+    //     let distanceZ = 100;
+    //     let currentZ = 100;
+    //     let newDistanceZ = 0;
+    //     let tempZ = 0;
+    //     while (currentZ < 10000) {
+    //         console.log('temp, new, dis, cur', tempZ, newDistanceZ, distanceZ, currentZ)
+    //         newDistanceZ = distanceZ;
+    //         createWallObs(scene, currentZ);
+    //         currentZ = currentZ + newDistanceZ;
+    //         if (tempZ >= 500) {
+    //             distanceZ += 5;
+    //             tempZ = 0;
+    //         } else {
+    //             tempZ += newDistanceZ;
+    //         }
+    //     }
+    //
+    // }
+
+
+
     //THIS IS CALLED IN characterController TO CHECK
     //WE DO HAVE AN ISTOUCHED VARIABLE WE CAN USE FOR CHECLS.
     public checkWallObs(player: PlayerSphere)
