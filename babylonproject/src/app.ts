@@ -185,35 +185,35 @@ class App {
         startBtn.color = "white";
         startBtn.top = "-14px";
         startBtn.thickness = 0;
-        startBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        startBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
         imageRect.addControl(startBtn);
         const preGameBtn = Button.CreateSimpleButton("pregame", "PREGAME");
-        startBtn.fontFamily = "Viga";
-        startBtn.width = 0.2
-        startBtn.height = "40px";
-        startBtn.color = "white";
-        startBtn.top = "-14px";
-        startBtn.thickness = 0;
-        startBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-        imageRect.addControl(startBtn);
+        preGameBtn.fontFamily = "Viga";
+        preGameBtn.width = 0.2
+        preGameBtn.height = "40px";
+        preGameBtn.color = "white";
+        preGameBtn.top = "-14px";
+        preGameBtn.thickness = 0;
+        preGameBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        imageRect.addControl(preGameBtn);
         const gameBtn = Button.CreateSimpleButton("game", "GAME");
-        startBtn.fontFamily = "Viga";
-        startBtn.width = 0.2
-        startBtn.height = "40px";
-        startBtn.color = "white";
-        startBtn.top = "-14px";
-        startBtn.thickness = 0;
-        startBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-        imageRect.addControl(startBtn);
+        gameBtn.fontFamily = "Viga";
+        gameBtn.width = 0.2
+        gameBtn.height = "40px";
+        gameBtn.color = "white";
+        gameBtn.top = "-14px";
+        gameBtn.thickness = 0;
+        gameBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        imageRect.addControl(gameBtn);
         const overBtn = Button.CreateSimpleButton("over", "OVER");
-        startBtn.fontFamily = "Viga";
-        startBtn.width = 0.2
-        startBtn.height = "40px";
-        startBtn.color = "white";
-        startBtn.top = "-14px";
-        startBtn.thickness = 0;
-        startBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-        imageRect.addControl(startBtn);
+        overBtn.fontFamily = "Viga";
+        overBtn.width = 0.2
+        overBtn.height = "40px";
+        overBtn.color = "white";
+        overBtn.top = "-14px";
+        overBtn.thickness = 0;
+        overBtn.verticalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        imageRect.addControl(overBtn);
 
         //set up transition effect : modified version of https://www.babylonjs-playground.com/#2FGYE8#0
         Effect.RegisterShader("fade",
