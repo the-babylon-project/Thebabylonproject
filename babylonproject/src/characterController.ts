@@ -9,7 +9,7 @@ import {
     ActionManager,
     Observable,
     ShadowGenerator,
-    FramingBehavior, ArcRotateCamera
+    FramingBehavior, ArcRotateCamera, Scalar
 } from "@babylonjs/core";
 import { PlayerInput } from "./inputController";
 
@@ -211,24 +211,11 @@ export class PlayerSphere extends TransformNode {
     private _setupPlayerCamera(): ArcRotateCamera {
         const camera = new ArcRotateCamera('playerCamera', 0, Math.PI / 2, 15, new Vector3(0, 0, 0), this.scene);
 
-        // Set camera limits
-        const maxDistance = 50;
-        const minDistance = 10;
-        const maxRotation = Math.PI / 6;
-        const minRotation = -maxRotation;
-
-        // Make camera smooth
-        const framingBehavior = new FramingBehavior();
-        framingBehavior.radiusScale = 20;
-        framingBehavior.positionScale = 20;
-        framingBehavior.elevationReturnTime = -1;
-        framingBehavior.zoomStopsAnimation = true;
-        framingBehavior.framingTime = 0;
-        camera.addBehavior(framingBehavior);
-
-        // Limit camera distance
-        camera.lowerRadiusLimit = minDistance;
-        camera.upperRadiusLimit = maxDistance;
+        if (camera.position.x < -25) {
+            camera.position.x = -25;
+        } else if (camera.position.x > 25) {
+            camera.position.x = 25;
+        }
 
         // TODO: Limit camera rotation
 
@@ -237,23 +224,29 @@ export class PlayerSphere extends TransformNode {
         this.scene.onBeforeRenderObservable.add(() => {
             // Set camera position
             const spherePosition = this.mesh.position.clone();
-            if (spherePosition.x < -35) {
-                spherePosition.x = -35;
-            } else if (spherePosition.x > 35) {
-                spherePosition.x = 35;
-            }
-            if (spherePosition.y > 80) {
-                spherePosition.y = 80;
-            }
-            camera.target = spherePosition;
+            const cameraPosition = new Vector3(
+                spherePosition.x,
+                spherePosition.y + 5,
+                spherePosition.z - 15
+            );
+            camera.position = Vector3.Lerp(camera.position, cameraPosition, 0.01);
 
-            // Set camera rotation
-            const lookDirection = this.mesh.position.subtract(camera.position);
+            const lookDirection = spherePosition.subtract(camera.position);
             lookDirection.normalize();
             const angleY = Math.atan2(lookDirection.x, lookDirection.z);
-            const angleX = -Math.atan2(lookDirection.y, Math.sqrt(lookDirection.x * lookDirection.x + lookDirection.z * lookDirection.z));
-            camera.alpha = angleY;
-            camera.beta = angleX;
+            const angleX = -1 * Math.atan2(lookDirection.y, Math.sqrt(lookDirection.x * lookDirection.x + lookDirection.z * lookDirection.z));
+            const maxRotation = 30 * Math.PI / 180;
+            camera.rotation.y = Scalar.Lerp(
+                camera.rotation.y,
+                Math.min(Math.max(angleY, -maxRotation), maxRotation),
+                0.01
+            );
+            camera.rotation.x = Scalar.Lerp(
+                camera.rotation.x,
+                Math.min(Math.max(angleX, -maxRotation), maxRotation),
+                0.10
+            );
+
         });
 
         return camera;
