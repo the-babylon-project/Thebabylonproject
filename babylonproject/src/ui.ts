@@ -48,7 +48,7 @@ export class Hud {
         const playerUI = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         this._playerUI = playerUI;
         this._playerUI.idealHeight = 720;
-        const pauseBtn = Button.CreateImageOnlyButton("pauseBtn", "./sprites/pauseBtn.png");
+        const pauseBtn = Button.CreateSimpleButton("pauseBtn", "Pause");
         pauseBtn.width = "48px";
         pauseBtn.height = "86px";
         pauseBtn.thickness = 0;
@@ -76,12 +76,12 @@ export class Hud {
     public updateHud(): void {
         //THIS LOOKS LIKE IN GAME HUD UPDATE TO TRACK FROM WHEN THE GAME STARTS TO GET THE CURRENT SECONDS
         //STOP TIMER IS BOOL
-        if (!this._stopTimer && this._startTime != null) {
-            let curTime = Math.floor((new Date().getTime() - this._startTime) / 1000) + this._prevTime; // divide by 1000 to get seconds
-
-            this.time = curTime; //keeps track of the total time elapsed in seconds
-            this._clockTime.text = this._formatTime(curTime);
-        }
+        // if (!this._stopTimer && this._startTime != null) {
+        //     let curTime = Math.floor((new Date().getTime() - this._startTime) / 1000) + this._prevTime; // divide by 1000 to get seconds
+        //
+        //     this.time = curTime; //keeps track of the total time elapsed in seconds
+        //     this._clockTime.text = this._formatTime(curTime);
+        // }
     }
     //---- Game Timer ----
     public startTimer(): void {
@@ -99,86 +99,86 @@ export class Hud {
     //---- Pause Menu Popup ----
     private _createPauseMenu(): void {
         //WE COULD PROBABLY USE THIS SORT OF FUNCTIONALITY AS A LOBBY MENU..I.E. A STATE WHERE THE GAME IS NOT GOING
-        this.gamePaused = false;
-
-        const pauseMenu = new Rectangle();
-        pauseMenu.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-        pauseMenu.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-        pauseMenu.height = 0.8;
-        pauseMenu.width = 0.5;
-        pauseMenu.thickness = 0;
-        pauseMenu.isVisible = false;
-        //stack panel for the buttons
-        const stackPanel = new StackPanel();
-        stackPanel.width = .83;
-        pauseMenu.addControl(stackPanel);
-
-        const resumeBtn = Button.CreateSimpleButton("resume", "RESUME");
-        resumeBtn.width = 0.18;
-        resumeBtn.height = "44px";
-        resumeBtn.color = "white";
-        resumeBtn.fontFamily = "Viga";
-        resumeBtn.paddingBottom = "14px";
-        resumeBtn.cornerRadius = 14;
-        resumeBtn.fontSize = "12px";
-        resumeBtn.textBlock.resizeToFit = true;
-        resumeBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-        resumeBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-        stackPanel.addControl(resumeBtn);
-
-        this._pauseMenu = pauseMenu;
-
-        //when the button is down, make menu invisible and remove control of the menu
-        resumeBtn.onPointerDownObservable.add(() => {
-            //THIS COULD POSSIBLY BE TO FIND MATCH
-            this._pauseMenu.isVisible = false;
-            this._playerUI.removeControl(pauseMenu);
-            this.pauseBtn.isHitTestVisible = true;
-
-            //game unpaused, our time is now reset
-            this.gamePaused = false;
-            this._startTime = new Date().getTime();
-        });
-
-        const quitBtn = Button.CreateSimpleButton("quit", "QUIT");
-        quitBtn.width = 0.18;
-        quitBtn.height = "44px";
-        quitBtn.color = "white";
-        quitBtn.fontFamily = "Viga";
-        quitBtn.paddingBottom = "12px";
-        quitBtn.cornerRadius = 14;
-        quitBtn.fontSize = "12px";
-        resumeBtn.textBlock.resizeToFit = true;
-        quitBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-        quitBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-        stackPanel.addControl(quitBtn);
-
-        //set up transition effect
-        Effect.RegisterShader("fade",
-            "precision highp float;" +
-            "varying vec2 vUV;" +
-            "uniform sampler2D textureSampler; " +
-            "uniform float fadeLevel; " +
-            "void main(void){" +
-            "vec4 baseColor = texture2D(textureSampler, vUV) * fadeLevel;" +
-            "baseColor.a = 1.0;" +
-            "gl_FragColor = baseColor;" +
-            "}");
-        this.fadeLevel = 1.0;
-
-        quitBtn.onPointerDownObservable.add(() => {
-            const postProcess = new PostProcess("Fade", "fade", ["fadeLevel"], null, 1.0, this._scene.getCameraByName("cam"));
-            postProcess.onApply = (effect) => {
-                effect.setFloat("fadeLevel", this.fadeLevel);
-            };
-            this.transition = true;
-
-            //--SOUNDS--
-            this.quitSfx.play();
-            if(this._pause.isPlaying){
-                this._pause.stop();
-            }
-        })
+        // this.gamePaused = false;
+        //
+        // const pauseMenu = new Rectangle();
+        // pauseMenu.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        // pauseMenu.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        // pauseMenu.height = 0.8;
+        // pauseMenu.width = 0.5;
+        // pauseMenu.thickness = 0;
+        // pauseMenu.isVisible = false;
+        // //stack panel for the buttons
+        // const stackPanel = new StackPanel();
+        // stackPanel.width = .83;
+        // pauseMenu.addControl(stackPanel);
+        //
+        // const resumeBtn = Button.CreateSimpleButton("resume", "RESUME");
+        // resumeBtn.width = 0.18;
+        // resumeBtn.height = "44px";
+        // resumeBtn.color = "white";
+        // resumeBtn.fontFamily = "Viga";
+        // resumeBtn.paddingBottom = "14px";
+        // resumeBtn.cornerRadius = 14;
+        // resumeBtn.fontSize = "12px";
+        // resumeBtn.textBlock.resizeToFit = true;
+        // resumeBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        // resumeBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        // stackPanel.addControl(resumeBtn);
+        //
+        // this._pauseMenu = pauseMenu;
+        //
+        // //when the button is down, make menu invisible and remove control of the menu
+        // resumeBtn.onPointerDownObservable.add(() => {
+        //     //THIS COULD POSSIBLY BE TO FIND MATCH
+        //     this._pauseMenu.isVisible = false;
+        //     this._playerUI.removeControl(pauseMenu);
+        //     this.pauseBtn.isHitTestVisible = true;
+        //
+        //     //game unpaused, our time is now reset
+        //     this.gamePaused = false;
+        //     this._startTime = new Date().getTime();
+        // });
+        //
+        // const quitBtn = Button.CreateSimpleButton("quit", "QUIT");
+        // quitBtn.width = 0.18;
+        // quitBtn.height = "44px";
+        // quitBtn.color = "white";
+        // quitBtn.fontFamily = "Viga";
+        // quitBtn.paddingBottom = "12px";
+        // quitBtn.cornerRadius = 14;
+        // quitBtn.fontSize = "12px";
+        // resumeBtn.textBlock.resizeToFit = true;
+        // quitBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        // quitBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        // stackPanel.addControl(quitBtn);
+        //
+        // //set up transition effect
+        // Effect.RegisterShader("fade",
+        //     "precision highp float;" +
+        //     "varying vec2 vUV;" +
+        //     "uniform sampler2D textureSampler; " +
+        //     "uniform float fadeLevel; " +
+        //     "void main(void){" +
+        //     "vec4 baseColor = texture2D(textureSampler, vUV) * fadeLevel;" +
+        //     "baseColor.a = 1.0;" +
+        //     "gl_FragColor = baseColor;" +
+        //     "}");
+        // this.fadeLevel = 1.0;
+        //
+        // quitBtn.onPointerDownObservable.add(() => {
+        //     const postProcess = new PostProcess("Fade", "fade", ["fadeLevel"], null, 1.0, this._scene.getCameraByName("cam"));
+        //     postProcess.onApply = (effect) => {
+        //         effect.setFloat("fadeLevel", this.fadeLevel);
+        //     };
+        //     this.transition = true;
+        //
+        //     //--SOUNDS--
+        //     this.quitSfx.play();
+        //     if(this._pause.isPlaying){
+        //         this._pause.stop();
+        //     }
+        // })
     }
 
 
