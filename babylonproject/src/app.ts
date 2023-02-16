@@ -507,11 +507,17 @@ class App {
         })
         //I can take this out in wallobs or here.
         //TODO: **NOTE**  glow layer was added here in tutorial foreach lantern. it may need to be done during rendering.--
-        // const gl = new GlowLayer("glow", scene);
-        // gl.intensity = 0.4;
-        // this._environment._boxObs.forEach(box => {
-        //     gl.addIncludedOnlyMesh(box.mesh);
-        // });
+        const gl = new GlowLayer("glow", scene);
+        gl.intensity = 7;
+        gl.blurKernelSize = 128;
+        gl.customEmissiveColorSelector = (mesh, subMesh, material, result) => {
+            result.set(2.2347, .6384, 1.5, 1.3451);
+        };
+
+
+        this._environment._boxObs.forEach(box => {
+            gl.addIncludedOnlyMesh(box.mesh);
+        });
     }
 }
 new App();

@@ -236,63 +236,57 @@ export class PlayerSphere extends TransformNode {
             return true;
         }
     }
+
     //--GAME UPDATES--
     private _beforeRenderUpdate(): void {
         this._updateFromControls();
         this._updateGroundDetection();
     }
 
-    public activatePlayerCamera(): UniversalCamera {
+    activatePlayerCamera(): UniversalCamera {
         this.scene.registerBeforeRender(() => {
             this._beforeRenderUpdate();
             this._updateCamera();
         });
+
         return this.camera;
     }
 
     private _updateCamera(): void {
-        if (this._camRoot.position.x < -25) {
-            this._camRoot.position.x = -25;
-        } else if (this._camRoot.position.x > 25) {
-            this._camRoot.position.x = 25;
-        }
+        const followFactor = 0.1;
+        const centerPlayer = this.mesh.position.y + 2;
+
+        // Update camera position
+        const camPos = this.camera.position.clone();
+        const targetPos = new Vector3(this.mesh.position.x, centerPlayer, this.mesh.position.z);
+        this.camera.position = Vector3.Lerp(camPos, targetPos, followFactor);
+
+        // Update camera rotation
+        const lookAt = this.mesh.position.clone();
+        lookAt.y += 2.5;
+        this.camera.setTarget(lookAt);
     }
 
     private _setupPlayerCamera(): UniversalCamera {
-        // Set up camera nodes
         this._camRoot = new TransformNode("root");
-        this._camRoot.position = new Vector3(0, 52, -55); //initialized at (0,0,0)
+        this._camRoot.position = new Vector3(0, 0, 0); //initialized at (0,0,0)
         //to face the player from behind (180 degrees)
         this._camRoot.rotation = new Vector3(0, Math.PI, 0);
-        this.camera = new UniversalCamera("playerCamera", new Vector3(0, 56, -56), this.scene);
+
+        //rotations along the x-axis (up/down tilting)
         let yTilt = new TransformNode("ytilt");
         //adjustments to camera view to point down at our player
         yTilt.rotation = PlayerSphere.ORIGINAL_TILT;
         this._yTilt = yTilt;
         yTilt.parent = this._camRoot;
+
+        //our actual camera that's pointing at our root's position
+        this.camera = new UniversalCamera("cam", new Vector3(0, 0, -30), this.scene);
         this.camera.lockedTarget = this._camRoot.position;
-        this.camera.fov = 1;
+        this.camera.fov = 0.47350045992678597;
         this.camera.parent = yTilt;
 
-        // camera.parent = this._camRoot
-        //
-        // const lookDirection = this._camRoot.position.clone();
-        // lookDirection.normalize();
-        // const angleY = Math.atan2(lookDirection.x, lookDirection.z);
-        // const angleX = -1 * Math.atan2(lookDirection.y, Math.sqrt(lookDirection.x * lookDirection.x + lookDirection.z * lookDirection.z));
-        // const maxRotation = 30 * Math.PI / 180;
-        // this._camRoot.rotation.y = Scalar.Lerp(
-        //     this._camRoot.rotation.y,
-        //         Math.min(Math.max(angleY, -maxRotation), maxRotation),
-        //         0.01
-        //     );
-        // this._camRoot.rotation.x = Scalar.Lerp(
-        //     this._camRoot.rotation.x,
-        //         Math.min(Math.max(angleX, -maxRotation), maxRotation),
-        //         0.10
-        //     );
-        // // this._camRoot.fov = .6;
-        // this._camRoot.parent = this._yTilt;
+        this.scene.activeCamera = this.camera;
         return this.camera;
     }
 
