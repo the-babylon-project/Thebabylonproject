@@ -14,7 +14,7 @@ import {
 
 //THIS WILL BE THE WALLOBSTACLE CLASS
 export class WallObstacle {
-    //this has a lightmaterial we can swap to when hit, a mseh, a scene, a position that we can use for validation,
+    //this has a lightmaterial we can swap to when hit, a mesh, a scene, a position that we can use for validation,
     //and a position.
 
     private _scene: Scene;

@@ -18,7 +18,7 @@ import {
     MeshBuilder,
     Quaternion,
     EngineFactory,
-    StandardMaterial, HemisphericLight
+    StandardMaterial, HemisphericLight, CubeTexture, Texture
 } from "@babylonjs/core";
 import { PlayerInput } from "./inputController";
 import { PlayerSphere } from "./characterController";
@@ -149,8 +149,6 @@ class App {
         //creates and positions a free camera
         let camera = new FreeCamera("camera1", new Vector3(0, 0, 0), scene);
         camera.setTarget(Vector3.Zero()); //targets the camera to scene origin
-        var light1: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 1, 0), this._scene);
-        var sphere: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, this._scene);
 
         //--SOUNDS--
 
@@ -158,11 +156,29 @@ class App {
         const guiMenu = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         guiMenu.idealHeight = 720;
 
-        // background image
+        //background image
         const imageRect = new Rectangle("titleContainer");
         imageRect.width = 0.8;
         imageRect.thickness = 0;
         guiMenu.addControl(imageRect);
+
+        //start bg
+        const startbg = new Image("startbg", "sprites/ffBg3.jpeg");
+        imageRect.addControl(startbg);
+
+        const title = new TextBlock("title", "Foo Flighters");
+        title.resizeToFit = true;
+        title.fontFamily = "Futura";
+        title.fontSize = "80px";
+        title.color = "white";
+        title.outlineWidth = 5;
+        title.outlineColor = "lightblue";
+        title.resizeToFit = true;
+        title.top = "20px";
+        title.width = 0.8;
+        title.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+        imageRect.addControl(title);
+
 
         const startBtn = Button.CreateSimpleButton("start", "START");
         startBtn.fontFamily = "Viga";
@@ -171,35 +187,8 @@ class App {
         startBtn.color = "white";
         startBtn.top = "-14px";
         startBtn.thickness = 0;
-        startBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        startBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
         imageRect.addControl(startBtn);
-        const preGameBtn = Button.CreateSimpleButton("pregame", "PREGAME");
-        preGameBtn.fontFamily = "Viga";
-        preGameBtn.width = 0.2
-        preGameBtn.height = "40px";
-        preGameBtn.color = "white";
-        preGameBtn.top = "-14px";
-        preGameBtn.thickness = 0;
-        preGameBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-        imageRect.addControl(preGameBtn);
-        const gameBtn = Button.CreateSimpleButton("game", "GAME");
-        gameBtn.fontFamily = "Viga";
-        gameBtn.width = 0.2
-        gameBtn.height = "40px";
-        gameBtn.color = "white";
-        gameBtn.top = "-14px";
-        gameBtn.thickness = 0;
-        gameBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-        imageRect.addControl(gameBtn);
-        const overBtn = Button.CreateSimpleButton("over", "OVER");
-        overBtn.fontFamily = "Viga";
-        overBtn.width = 0.2
-        overBtn.height = "40px";
-        overBtn.color = "white";
-        overBtn.top = "-14px";
-        overBtn.thickness = 0;
-        overBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-        imageRect.addControl(overBtn);
 
         //set up transition effect : modified version of https://www.babylonjs-playground.com/#2FGYE8#0
         Effect.RegisterShader("fade",
@@ -237,29 +226,6 @@ class App {
 
             scene.detachControl(); //observables disabled
         });
-        preGameBtn.onPointerDownObservable.add(() => {
-            this._transition = true;
-            this._state = State.PREGAME;
-
-            scene.detachControl(); //observables disabled
-        });
-        gameBtn.onPointerDownObservable.add(() => {
-            this._transition = true;
-            this._state = State.GAME;
-
-            scene.detachControl(); //observables disabled
-        });
-        overBtn.onPointerDownObservable.add(() => {
-            //fade screen
-            const postProcess = new PostProcess("Fade", "fade", ["fadeLevel"], null, 1.0, camera);
-            postProcess.onApply = (effect) => {
-                effect.setFloat("fadeLevel", fadeLevel);
-            };
-            this._transition = true;
-            this._state = State.OVER;
-
-            scene.detachControl(); //observables disabled
-        });
 
         //--SCENE FINISHED LOADING--
         await scene.whenReadyAsync();
@@ -270,7 +236,7 @@ class App {
         this._state = State.START;
     }
     private async _goToPreGame() {
-        this._engine.displayLoadingUI();
+        // this._engine.displayLoadingUI();
         //--SETUP SCENE--
         //dont detect any inputs from this ui while the game is loading
         this._scene.detachControl();
@@ -322,11 +288,11 @@ class App {
         scene.detachControl();
 
         //IBL (image based lighting) - to give scene an ambient light
-        // const envHdri = CubeTexture.CreateFromPrefilteredData("textures/envtext.env", scene);
-        // envHdri.name = "env";
-        // envHdri.gammaSpace = false;
-        // scene.environmentTexture = envHdri;
-        // scene.environmentIntensity = 0.04;
+        const envHdri = CubeTexture.CreateFromPrefilteredData("textures/envtext.dds", scene);
+        envHdri.name = "env";
+        envHdri.gammaSpace = false;
+        scene.environmentTexture = envHdri;
+        scene.environmentIntensity = 0.04;
 
         //--INPUT--
         this._input = new PlayerInput(scene, this._ui); //detect keyboard/mobile inputs
@@ -341,7 +307,7 @@ class App {
         //This 'outer' is our character.
         scene.getMeshByName("outer").position = scene.getMeshByName("sphere").getAbsolutePosition(); //move the player to the start position
         this._ui.startTimer();
-
+        console.log("scene.getMeshByName(\"sphere\").getAbsolutePosition():", scene.getMeshByName("sphere").getAbsolutePosition())
         //get rid of start scene, switch to gamescene and change states
         this._scene.dispose();
         this._state = State.GAME;
@@ -379,7 +345,7 @@ class App {
             //mainMenu callbacks
 
             this._ui.transition = true;
-            this._ui.quitSfx.play();
+            // this._ui.quitSfx.play();
         })
     }
 
@@ -440,20 +406,15 @@ class App {
             guiMenu.dispose();
 
             this._transition = true;
-            // sfx.play();
-
         });
 
         //--SCENE FINISHED LOADING--
         await scene.whenReadyAsync();
         this._engine.hideLoadingUI(); //when the scene is ready, hide loading
-        //lastly set the current state to the lose state and set the scene to the lose scene
         this._scene.dispose();
         this._scene = scene;
         this._state = State.OVER;
     }
-//
-    //load the character model
     private async _loadCharacterAssets(scene): Promise<any> {
 
         async function loadCharacter() {
@@ -476,23 +437,22 @@ class App {
             const material = new StandardMaterial("material", scene);
             material.emissiveColor = new Color3(1, .67, .44);
             material.specularColor = new Color3(0, 0, 1);
-            // material.diffuseTexture = new Texture("./assets/textures.png", scene);
+            material.diffuseTexture = new Texture("textures/envtext.dds", scene);
             const glowLayer = new GlowLayer('glow', scene);
             glowLayer.addIncludedOnlyMesh(playerSphere);
             glowLayer.intensity = 1.0;
-            glowLayer.blurKernelSize = 64;
-            glowLayer.customEmissiveColorSelector = (playerSphere, subMesh, material, result) => {
-                result.set(2, 1, 1, 1);
+            glowLayer.customEmissiveColorSelector = (mesh, subMesh, material, result) => {
+                result.set(0.4, 0.7, 1.0, 1.0);
             };
+            glowLayer.blurKernelSize = 128;
             playerSphere.parent = outer;
             playerSphere.isPickable = false;
 
-                //return the mesh and animations
+                //return the mesh
                 return {
                     mesh: outer as Mesh,
                 }
         }
-
         return loadCharacter().then(assets => {
             this.assets = assets;
         });
@@ -502,10 +462,11 @@ class App {
     private async _initializeGameAsync(scene): Promise<void> {
 
         //temp light for entire scene
-        const lightTemp = new HemisphericLight('lightTemp', new Vector3(0,1,0), this._scene)
+        // const lightTemp = new HemisphericLight('lightTemp', new Vector3(0,1,0), this._scene)
 
-        // scene.ambientColor = new Color3(0.34509803921568627, 0.5568627450980392, 0.8352941176470589);
-        // scene.clearColor = new Color4(0.01568627450980392, 0.01568627450980392, 0.20392156862745098);
+        scene.ambientColor = new Color3(1, 1, 1);
+        scene.clearColor = new Color4(0.5294117647058824, 0.807843137254902, 0.9803921568627451);
+
 
         // const shadowLight = new PointLight("sparklight", new Vector3(0, 0, 0), scene);
         // shadowLight.diffuse = new Color3(0.08627450980392157, 0.10980392156862745, 0.15294117647058825);
@@ -516,13 +477,12 @@ class App {
 
         //Create the player
         this._player = new PlayerSphere(this.assets, scene, this._input);
-        lightTemp.parent = this._player;
 
         const camera = this._player.activatePlayerCamera();
         //TODO: need to ensure activate player camera is attaching to player.
         //set up collision chekcs
         this._environment.checkBoxObs(this._player);
-
+        // console.log('camera', camera, 'this._env', this._environment, 'this._player', this._player)
         //--Transition post process--
         scene.registerBeforeRender(() => {
             if (this._ui.transition) {
@@ -530,7 +490,7 @@ class App {
 
                 //once the fade transition has complete, switch scenes
                 if(this._ui.fadeLevel <= 0) {
-                    this._ui.quit = true;
+                    this._ui.quit = true;//we're hitting this on init
                     this._ui.transition = false;
                 }
             }
