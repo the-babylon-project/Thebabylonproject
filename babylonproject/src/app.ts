@@ -43,6 +43,7 @@ class App {
     private _player: PlayerSphere;
     private _ui: Hud;
     private _environment;
+    private _camera;
 //     //Sounds
 //     // public sfx: Sound;
 //     public game: Sound;
@@ -305,9 +306,11 @@ class App {
 
         //Actions to complete once the game loop is setup
         //This 'outer' is our character.
-        scene.getMeshByName("outer").position = scene.getMeshByName("sphere").getAbsolutePosition(); //move the player to the start position
+        const startPosition = scene.getMeshByName("sphere").getAbsolutePosition();
+        //start position
+        scene.getMeshByName("outer").position = new Vector3(startPosition.x, startPosition.y + 35, startPosition.z-20);
+        scene.getMeshByName("sphere").dispose(); //removes start pos sphere.
         this._ui.startTimer();
-        console.log("scene.getMeshByName(\"sphere\").getAbsolutePosition():", scene.getMeshByName("sphere").getAbsolutePosition())
         //get rid of start scene, switch to gamescene and change states
         this._scene.dispose();
         this._state = State.GAME;
@@ -315,6 +318,8 @@ class App {
         this._engine.hideLoadingUI();
         //the game is ready, attach control back
         this._scene.attachControl();
+        // Detach the control of the camera
+
 
         //--SOUNDS--
     }
@@ -479,6 +484,7 @@ class App {
         this._player = new PlayerSphere(this.assets, scene, this._input);
 
         const camera = this._player.activatePlayerCamera();
+
         //TODO: need to ensure activate player camera is attaching to player.
         //set up collision chekcs
         this._environment.checkBoxObs(this._player);
@@ -518,6 +524,7 @@ class App {
         this._environment._boxObs.forEach(box => {
             gl.addIncludedOnlyMesh(box.mesh);
         });
+
     }
 }
 new App();
