@@ -23,7 +23,7 @@ import {
     Quaternion,
     AssetsManager,
     EngineFactory,
-    StandardMaterial
+    StandardMaterial, HemisphericLight
 } from "@babylonjs/core";
 import { PlayerInput } from "./inputController";
 import { PlayerSphere } from "./characterController";
@@ -48,18 +48,13 @@ class App {
     private _player: PlayerSphere;
     private _ui: Hud;
     private _environment;
-//
 //     //Sounds
 //     // public sfx: Sound;
 //     public game: Sound;
 //     public end: Sound;
-//
-//     //Scene - related
     private _state: number = 0;
     private _gamescene: Scene;
-    private _cutScene: Scene;
-//
-//     //post process
+    private _preGamescene: Scene;
     private _transition: boolean = false;
 //
     constructor() {
@@ -84,12 +79,11 @@ class App {
                 }
             }
         });
-
-        //MAIN render loop & state machine
         await this._main();
     }
 //
     private async _main(): Promise<void> {
+        //state switching
         await this._goToStart();
 
         // Register a render loop to repeatedly render the scene
@@ -100,17 +94,17 @@ class App {
                     break;
                 case State.PREGAME:
                     this._scene.render();
-                    this._setUpGame();
+                    this._goToPreGame();
                     break;
                 case State.GAME:
-                    if (this._player.win) {
-                        //TODO: goto win function
-                        this._ui.stopTimer();
-                    }
-                    if (this._player.lose) {
-                        this._goToStart();
-                        this._ui.quit = false;
-                    }
+                    // if (this._player.win) {
+                    //     //TODO: goto win function
+                    //     this._ui.stopTimer();
+                    // }
+                    // if (this._player.lose) {
+                    //     this._goToStart();
+                    //     this._ui.quit = false;
+                    // }
                     this._scene.render();
                     this._goToGame();
                     break;
@@ -125,8 +119,7 @@ class App {
             this._engine.resize();
         });
     }
-//
-//     //set up the canvas
+
     private _createCanvas(): HTMLCanvasElement {
 
         //Commented out for development
@@ -151,9 +144,7 @@ class App {
 
         return this._canvas;
     }
-    //THE STUFF ABOVE HERE WAS THE NECESSARY BASICS, BELOW WILL BE MY SPLASH FUNCTIONS TO PULL FROM.
-//
-//     // goToStart
+
     private async _goToStart() {
         this._engine.displayLoadingUI(); //make sure to wait for start to load
 
@@ -165,6 +156,8 @@ class App {
         //creates and positions a free camera
         let camera = new FreeCamera("camera1", new Vector3(0, 0, 0), scene);
         camera.setTarget(Vector3.Zero()); //targets the camera to scene origin
+        var light1: HemisphericLight = new HemisphericLight("light1", new Vector3(1, 1, 0), this._scene);
+        var sphere: Mesh = MeshBuilder.CreateSphere("sphere", { diameter: 1 }, this._scene);
 
         //--SOUNDS--
 
@@ -194,7 +187,7 @@ class App {
         preGameBtn.color = "white";
         preGameBtn.top = "-14px";
         preGameBtn.thickness = 0;
-        preGameBtn.verticalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        preGameBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
         imageRect.addControl(preGameBtn);
         const gameBtn = Button.CreateSimpleButton("game", "GAME");
         gameBtn.fontFamily = "Viga";
@@ -212,7 +205,7 @@ class App {
         overBtn.color = "white";
         overBtn.top = "-14px";
         overBtn.thickness = 0;
-        overBtn.verticalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+        overBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         imageRect.addControl(overBtn);
 
         //set up transition effect : modified version of https://www.babylonjs-playground.com/#2FGYE8#0
@@ -233,7 +226,7 @@ class App {
             if (this._transition) {
                 fadeLevel -= .05;
                 if(fadeLevel <= 0){
-                    // this._goToCutScene();
+                    this._goToPreGame();
                     this._transition = false;
                 }
             }
@@ -283,7 +276,30 @@ class App {
         this._scene = scene;
         this._state = State.START;
     }
-    private async _setUpGame() {
+    private async _goToPreGame() {
+        this._engine.displayLoadingUI();
+        //--SETUP SCENE--
+        //dont detect any inputs from this ui while the game is loading
+        this._scene.detachControl();
+        this._preGamescene = new Scene(this._engine);
+        let camera = new FreeCamera("camera1", new Vector3(0, 0, 0), this._preGamescene);
+        camera.setTarget(Vector3.Zero());
+        this._preGamescene.clearColor = new Color4(0, 0, 0, 1);
+        //--WHEN SCENE IS FINISHED LOADING--
+        await this._preGamescene.whenReadyAsync();
+        this._scene.dispose();
+        this._state = State.PREGAME;
+        this._scene = this._preGamescene;
+
+        //--START LOADING AND SETTING UP THE GAME DURING THIS SCENE--
+        var finishedLoading = false;
+        await this._setUpGame().then(res =>{
+            finishedLoading = true;
+            this._goToGame();
+
+        });
+    }
+    private async _setUpGame() { //async
         //--CREATE SCENE--
         let scene = new Scene(this._engine);
         this._gamescene = scene;
@@ -299,6 +315,7 @@ class App {
         await this._loadCharacterAssets(scene); //character
     }
 
+
     private async _goToGame(): Promise<void> {
 
         //--SETUP SCENE--
@@ -312,11 +329,11 @@ class App {
         scene.detachControl();
 
         //IBL (image based lighting) - to give scene an ambient light
-        const envHdri = CubeTexture.CreateFromPrefilteredData("textures/envtext.env", scene);
-        envHdri.name = "env";
-        envHdri.gammaSpace = false;
-        scene.environmentTexture = envHdri;
-        scene.environmentIntensity = 0.04;
+        // const envHdri = CubeTexture.CreateFromPrefilteredData("textures/envtext.env", scene);
+        // envHdri.name = "env";
+        // envHdri.gammaSpace = false;
+        // scene.environmentTexture = envHdri;
+        // scene.environmentIntensity = 0.04;
 
         //--INPUT--
         this._input = new PlayerInput(scene, this._ui); //detect keyboard/mobile inputs
@@ -491,8 +508,10 @@ class App {
 //     //init game
     private async _initializeGameAsync(scene): Promise<void> {
 
-        scene.ambientColor = new Color3(0.34509803921568627, 0.5568627450980392, 0.8352941176470589);
-        scene.clearColor = new Color4(0.01568627450980392, 0.01568627450980392, 0.20392156862745098);
+        //temp light for entire scene
+        const lightTemp = new HemisphericLight('lightTemp', new Vector3(0,1,0), this._scene)
+        // scene.ambientColor = new Color3(0.34509803921568627, 0.5568627450980392, 0.8352941176470589);
+        // scene.clearColor = new Color4(0.01568627450980392, 0.01568627450980392, 0.20392156862745098);
 
         const shadowLight = new PointLight("sparklight", new Vector3(0, 0, 0), scene);
         shadowLight.diffuse = new Color3(0.08627450980392157, 0.10980392156862745, 0.15294117647058825);
@@ -507,7 +526,7 @@ class App {
         const camera = this._player.activatePlayerCamera();
         //TODO: need to ensure activate player camera is attaching to player.
         //set up collision chekcs
-        this._environment.checkCollisions(this._player);
+        this._environment.checkWallObs(this._player);
 
         //--Transition post process--
         scene.registerBeforeRender(() => {
@@ -534,8 +553,8 @@ class App {
         //TODO: **NOTE**  glow layer was added here in tutorial foreach lantern. it may need to be done during rendering.--
         const gl = new GlowLayer("glow", scene);
         gl.intensity = 0.4;
-        this._environment._lanternObjs.forEach(lantern => {
-            gl.addIncludedOnlyMesh(lantern.mesh);
+        this._environment._wallObs.forEach(box => {
+            gl.addIncludedOnlyMesh(box.mesh);
         });
     }
 }

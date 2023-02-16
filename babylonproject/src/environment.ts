@@ -2,7 +2,7 @@ import {
     Scene,
     TransformNode,
     SceneLoader,
-    PBRMetallicRoughnessMaterial, Mesh, MeshBuilder, StandardMaterial, GlowLayer,
+    PBRMetallicRoughnessMaterial, Mesh, MeshBuilder, StandardMaterial, GlowLayer, Texture, Color3,
 } from "@babylonjs/core";
 
 import {WallObstacle} from "./wallObstacle";
@@ -13,41 +13,43 @@ export class Environment {
 
     //Meshes
     private _wallObs: Array<WallObstacle>;
-    //I can get the position of every boxOb here. When the sphere hits it, we're
-    //
-    private _lightmtl: PBRMetallicRoughnessMaterial; // emissive texture for when lanterns are lit
-    private _currentZ: number;
+    private _lightmtl: PBRMetallicRoughnessMaterial; // emissive texture
+
 
 
     constructor(scene: Scene) {
         this._scene = scene;
         this._wallObs = [];
-
-        //create emissive material for when lantern is lit
-        const lightmtl = new PBRMetallicRoughnessMaterial("light material", this._scene);
+        const lightmtl = new PBRMetallicRoughnessMaterial("boxOb mesh light", this._scene);
+        //change values and texture
+        // lightmtl.emissiveTexture = new Texture("/textures/litLantern.png", this._scene, true, false);
+        lightmtl.emissiveColor = new Color3(0.8784313725490196, 0.7568627450980392, 0.6235294117647059);
         this._lightmtl = lightmtl;
     }
     public async load() {
-
+        //load course
         const assets = await this._loadAssets();
 
-        //this is loading the whole scene, iterating through the elements and doing check collision and shadow setters.
-        //the purpose of brining in load assets is to add collisons and shadows, and make ispickable or not on every part.
-        // assets.allMeshes.forEach(m => {
-        //     m.receiveShadows = true;
-        //     m.checkCollisions = true;
-        //
-        //     if (m.name == "leftWall" || m.name == "rightWall" || m.name == "ceiling") {
-        //         //dont check for collisions, dont allow for raycasting
-        //         m.checkCollisions = false;
-        //         m.isPickable = false;
-        //     }
-        //     //areas that will use box collisions
-        //     if (m.name.includes("boxWallOb")) {
-        //         m.checkCollisions = true;
-        //         m.isPickable = false;
-        //     }
-        // });
+        // this is loading the whole scene, iterating through the elements and doing check collision and shadow setters.
+        // the purpose of brining in load assets is to add collisons and shadows, and make ispickable or not on every part.
+        assets.allMeshes.forEach(m => {
+            m.receiveShadows = true;
+            m.checkCollisions = true;
+            if (m.name.includes("ground")) {
+                m.checkCollisions = true;
+                m.isPickable = true;
+            }
+            if (m.name == "leftWall" || m.name == "rightWall" || m.name == "ceiling") {
+                //dont check for collisions, dont allow for raycasting
+                m.checkCollisions = false;
+                m.isPickable = true;
+            }
+            //areas that will use box collisions
+            if (m.name.includes("boxWallOb")) {
+                m.checkCollisions = true;
+                m.isPickable = false;
+            }
+        });
         return assets;
     }
     //Load all necessary meshes for the environment
@@ -55,42 +57,14 @@ export class Environment {
         //TODO: pick out the parent 'Mesh' of these, when we call this in load, it will iterate through each parent mesh
         // and add the params receive shadoes, is pickable, and checkCollisions..
         //load track
-        const result = await SceneLoader.ImportMeshAsync(null, "./models/", "track.glb", this._scene);
-        let env = result.meshes[0]; //gets root
-        let trackMeshes = env.getChildMeshes();
-
-
-        //load modified wall obstacles.
-        const wallObstaclesArray = await this._modifyWallObs(); //this brings in wall obstacle class.
-
-        // let wallObParent =???
-        // wallObDad.parent = null;
-        // res.meshes[0].dispose();
-
-        env.dispose();
-        return {
-            //return the track and the wall obstacles as meshes.
-            trackMeshes: trackMeshes,
-            wallObstacles: wallObstaclesArray,
-        }
-    }
-    private async _modifyWallObs(){
-        //TODO: implement material for each obstacle wall and add glow
-
-
-        //This takes in createWallOb and iterates it with determinations.
         const wallObHolder = new TransformNode("wallObHolder", this._scene);
 
-        let wallObWhole = await SceneLoader.ImportMeshAsync(null, './models/', 'wallOb_40+10.glb');
-
-        // Get the "wallparent" nodes
-        let wallParents = wallObWhole.meshes.filter(mesh => mesh.name.startsWith("wallsParent"));
-        //This includes ['wallParent + positionZ'(undefined mesh), leftWallOb, rightWallOb, topWallOb, botWallOb]
-
-        // Iterate through each "wallparent" node
+        const result = await SceneLoader.ImportMeshAsync(null, "./models/", "envSetting_50+10.glb", this._scene);
+        let env = result.meshes[0]; //gets total env
+        let allMeshes = env.getChildMeshes();
+        let wallParents = env.getChildMeshes(false, mesh => mesh.name.startsWith("wallsParent"));
         wallParents.forEach(wallParent => {
             // Get the box child
-
             let boxChild = wallParent.getChildMeshes(true, mesh => mesh.name.startsWith("boxOb"))[0] as Mesh;
 
             // Apply a glow effect to the box child
@@ -111,9 +85,53 @@ export class Environment {
             let newWallOb = new WallObstacle(this._lightmtl, boxChild, this._scene, wallParent.getChildTransformNodes(true).find(m => m.name === "boxOb").getAbsolutePosition(), glowLayer);
             this._wallObs.push(newWallOb);
         });
-        //probably dispose after push
-        return this._wallObs;
-    }
+
+        return {
+            //return the track and the wall obstacles as meshes.
+            env: env,
+            allMeshes: allMeshes,
+            wallObstacles: this._wallObs,
+        }
+    }//--deprecated--
+    // private async _modifyWallObs(){
+    //     //this is substituting for his adding animations to lanterns, we will add glow layers to boxOb.
+    //     //TODO: implement material for each obstacle wall and add glow
+    //
+    //     //This takes in createWallOb and iterates it with determinations.
+    //     const wallObHolder = new TransformNode("wallObHolder", this._scene);
+    //
+    //     let wallObWhole = await SceneLoader.ImportMeshAsync(null, './models/', 'wallOb_40+10.glb');
+    //
+    //     // Get the "wallparent" nodes
+    //     let wallParents = wallObWhole.meshes.filter(mesh => mesh.name.startsWith("wallsParent"));
+    //     //This includes ['wallParent + positionZ'(undefined mesh), leftWallOb, rightWallOb, topWallOb, botWallOb]
+    //
+    //     // Iterate through each "wallparent" node
+    //     wallParents.forEach(wallParent => {
+    //         // Get the box child
+    //         let boxChild = wallParent.getChildMeshes(true, mesh => mesh.name.startsWith("boxOb"))[0] as Mesh;
+    //
+    //         // Apply a glow effect to the box child
+    //         let glowLayer = new GlowLayer("glow", this._scene);
+    //         //TODO: customize glow
+    //         glowLayer.intensity = 1.0;
+    //         glowLayer.addIncludedOnlyMesh(boxChild);
+    //         boxChild.isVisible = false;
+    //
+    //         // Iterate through the wall children
+    //         let wallChildren = wallParent.getChildMeshes(true, mesh => mesh.name.includes("Wall"));
+    //         wallChildren.forEach(wallChild => {
+    //             // TODO: do something for each wall.
+    //             // wallChild.checkCollisions = true;
+    //             wallChild.isVisible = true;
+    //         });
+    //         wallParent.setParent(wallObHolder);
+    //         let newWallOb = new WallObstacle(this._lightmtl, boxChild, this._scene, wallParent.getChildTransformNodes(true).find(m => m.name === "boxOb").getAbsolutePosition(), glowLayer);
+    //         this._wallObs.push(newWallOb);
+    //     });
+    //     //probably dispose after push
+    //     return this._wallObs;
+    // }
     // --USED IN PLAYGROUND TO CREATE OBSTACLES, KEPT FOR REFERENCE--
     // async createWallObs(scene: Scene, material: StandardMaterial): Promise<Mesh> {
     //     // Create the parent mesh that will hold all the walls
