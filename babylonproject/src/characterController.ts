@@ -8,7 +8,6 @@ import {
     ExecuteCodeAction,
     ActionManager,
     Observable,
-    ShadowGenerator,
     FramingBehavior, ArcRotateCamera, Scalar, Quaternion
 } from "@babylonjs/core";
 import { PlayerInput } from "./inputController";
@@ -54,7 +53,7 @@ export class PlayerSphere extends TransformNode {
     //observables
     public onRun = new Observable();
 
-    constructor(assets, scene: Scene, shadowGenerator: ShadowGenerator, input?: PlayerInput) {
+    constructor(assets, scene: Scene, input?: PlayerInput) {
         super("PlayerSphere", scene);
         this.scene = scene;
 
@@ -110,7 +109,6 @@ export class PlayerSphere extends TransformNode {
         //     }
         // })
         //LAST CONSTRUCTORS BEING INITIATED.
-        shadowGenerator.addShadowCaster(assets.mesh);
 
         this._input = input;
     }
