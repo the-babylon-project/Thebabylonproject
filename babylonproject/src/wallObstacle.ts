@@ -32,9 +32,9 @@ export class WallObstacle {
         this._loadWallObstacle(mesh, position);
         //sets the position param.
         const light = new PointLight("wall light", this.mesh.getAbsolutePosition(), this._scene);
-        light.intensity = 1;
+        light.intensity = 4;
         light.radius = 2;
-        light.diffuse = new Color3(0.45, 0.56, 0.80);
+        light.diffuse = new Color3(0.16, 0.90, 0.80);
         this._light = light;
     }
     public _loadWallObstacle(mesh: Mesh, position: Vector3): void {

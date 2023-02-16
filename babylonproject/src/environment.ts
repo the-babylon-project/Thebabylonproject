@@ -23,6 +23,7 @@ export class Environment {
         this._boxObs = [];
         const lightmtl = new PBRMetallicRoughnessMaterial("boxOb mesh light", this._scene);
         lightmtl.emissiveColor = new Color3(0.8784313725490196, 0.7568627450980392, 0.6235294117647059);
+        lightmtl.metallic = 6;
         this._lightmtl = lightmtl;
     }
 
