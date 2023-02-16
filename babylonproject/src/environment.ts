@@ -2,7 +2,15 @@ import {
     Scene,
     TransformNode,
     SceneLoader,
-    PBRMetallicRoughnessMaterial, Mesh, MeshBuilder, StandardMaterial, GlowLayer, Texture, Color3,
+    PBRMetallicRoughnessMaterial,
+    Mesh,
+    MeshBuilder,
+    StandardMaterial,
+    GlowLayer,
+    Texture,
+    Color3,
+    ActionManager,
+    ExecuteCodeAction,
 } from "@babylonjs/core";
 
 import {WallObstacle} from "./wallObstacle";
@@ -12,23 +20,23 @@ export class Environment {
     private _scene: Scene;
 
     //Meshes
-    private _wallObs: Array<WallObstacle>;
+    private _boxObs: Array<WallObstacle>; //this will be used to _checkBoxObs with action manager
     private _lightmtl: PBRMetallicRoughnessMaterial; // emissive texture
-
-
-
     constructor(scene: Scene) {
         this._scene = scene;
-        this._wallObs = [];
+        this._boxObs = [];
         const lightmtl = new PBRMetallicRoughnessMaterial("boxOb mesh light", this._scene);
         //change values and texture
         // lightmtl.emissiveTexture = new Texture("/textures/litLantern.png", this._scene, true, false);
         lightmtl.emissiveColor = new Color3(0.8784313725490196, 0.7568627450980392, 0.6235294117647059);
         this._lightmtl = lightmtl;
     }
+
     public async load() {
         //load course
         const assets = await this._loadAssets();
+        const boxObHolder = new TransformNode("boxObHolder", this._scene);
+
 
         // this is loading the whole scene, iterating through the elements and doing check collision and shadow setters.
         // the purpose of brining in load assets is to add collisons and shadows, and make ispickable or not on every part.
@@ -45,54 +53,95 @@ export class Environment {
                 m.isPickable = true;
             }
             //areas that will use box collisions
-            if (m.name.includes("boxWallOb")) {
+            if (m.name.includes("WallOb")) {
                 m.checkCollisions = true;
                 m.isPickable = false;
             }
         });
-        return assets;
+        assets.boxChildren.forEach(mesh => {
+            if (mesh instanceof Mesh) {
+                mesh.checkCollisions = true;
+                mesh.isVisible = false;
+                mesh.setParent(boxObHolder);
+                let newWallOb = new WallObstacle(this._lightmtl, mesh, this._scene, mesh.getAbsolutePosition());
+                console.log(mesh.getAbsolutePosition())
+                this._boxObs.push(newWallOb);
+            }
+        });
     }
+
     //Load all necessary meshes for the environment
     public async _loadAssets() {
         //TODO: pick out the parent 'Mesh' of these, when we call this in load, it will iterate through each parent mesh
         // and add the params receive shadoes, is pickable, and checkCollisions..
         //load track
-        const wallObHolder = new TransformNode("wallObHolder", this._scene);
+        // const boxObHolder = new TransformNode("boxObHolder", this._scene);
 
         const result = await SceneLoader.ImportMeshAsync(null, "./models/", "envSetting_50+10.glb", this._scene);
         let env = result.meshes[0]; //gets total env
-        let allMeshes = env.getChildMeshes();
-        let wallParents = env.getChildMeshes(false, mesh => mesh.name.startsWith("wallsParent"));
-        wallParents.forEach(wallParent => {
-            // Get the box child
-            let boxChild = wallParent.getChildMeshes(true, mesh => mesh.name.startsWith("boxOb"))[0] as Mesh;
-
-            // Apply a glow effect to the box child
-            let glowLayer = new GlowLayer("glow", this._scene);
-            //TODO: customize glow
-            glowLayer.intensity = 1.0;
-            glowLayer.addIncludedOnlyMesh(boxChild);
-            boxChild.isVisible = false;
-
-            // Iterate through the wall children
-            let wallChildren = wallParent.getChildMeshes(true, mesh => mesh.name.includes("Wall"));
-            wallChildren.forEach(wallChild => {
-                // TODO: do something for each wall.
-                // wallChild.checkCollisions = true;
-                wallChild.isVisible = true;
-            });
-            wallParent.setParent(wallObHolder);
-            let newWallOb = new WallObstacle(this._lightmtl, boxChild, this._scene, wallParent.getChildTransformNodes(true).find(m => m.name === "boxOb").getAbsolutePosition(), glowLayer);
-            this._wallObs.push(newWallOb);
-        });
-
+        let allMeshes = env.getChildMeshes(false); //this doesn't include 'parent wall'.
+        let boxChildren = allMeshes.filter((mesh) => mesh.name === "boxOb");
+        //I want to return boxObs as a list of boxObs that I can iterate.
+        // for (let mesh of boxChildren) {
+        //     if (mesh instanceof Mesh) {
+        //         let glowLayer = new GlowLayer("glow", this._scene);
+        //         //TODO: customize glow
+        //         glowLayer.intensity = 1.0;
+        //         glowLayer.addIncludedOnlyMesh(mesh);
+        //         // mesh.checkCollisions = true;
+        //         mesh.isVisible = false;
+        //         mesh.setParent(boxObHolder);
+        //         let newWallOb = new WallObstacle(this._lightmtl, mesh, this._scene, mesh.getAbsolutePosition(), glowLayer);
+        //         this._boxObs.push(newWallOb);
+        //     }
+        // }
         return {
             //return the track and the wall obstacles as meshes.
             env: env,
             allMeshes: allMeshes,
-            wallObstacles: this._wallObs,
+            boxChildren: boxChildren,
         }
-    }//--deprecated--
+    }
+    public checkBoxObs(player: PlayerSphere) {
+
+        // if (!this._boxObs[0].isTouched) {
+        //     this._boxObs[0].setEmissiveTexture();
+        // }
+        // this._boxObs.forEach(boxOb => {
+        //     player.mesh.actionManager.registerAction(
+        //         new ExecuteCodeAction(
+        //             {
+        //                 trigger: ActionManager.OnIntersectionEnterTrigger,
+        //                 parameter: boxOb.mesh
+        //             },
+        //             () => {
+        //                 // if the lantern is not lit, light it up & reset sparkler timer
+        //                 if (!boxOb.isTouched && player.position.z === boxOb.position.z) {
+        //                     player.lanternsLit += 1;
+        //                     boxOb.setEmissiveTexture();
+        //                     player.sparkReset = true;
+        //                     player.sparkLit = true;
+        //
+        //                     //SFX
+        //                     player.lightSfx.play();
+        //                 }
+        //                 // if the lantern is lit already, reset the sparkler timer
+        //                 else if (boxOb.isLit) {
+        //                     player.sparkReset = true;
+        //                     player.sparkLit = true;
+        //
+        //                     //SFX
+        //                     player.sparkResetSfx.play();
+        //                 }
+        //             }
+        //         )
+        //     );
+        // });
+    }
+}
+
+
+    //--deprecated--
     // private async _modifyWallObs(){
     //     //this is substituting for his adding animations to lanterns, we will add glow layers to boxOb.
     //     //TODO: implement material for each obstacle wall and add glow
@@ -225,50 +274,3 @@ export class Environment {
     //     }
     //
     // }
-
-
-
-    //THIS IS CALLED IN characterController TO CHECK
-    //WE DO HAVE AN ISTOUCHED VARIABLE WE CAN USE FOR CHECLS.
-    public checkWallObs(player: PlayerSphere)
-    {
-        //THIS IS JUST THE BASIC METHOD OF LIGHTING LANTERNS FOR HIM, I CAN'T FIND AN EQUIVALENT
-        // BUT IT COULD BE USED FOR THE CHECKING OF PLAYER AND BOXOB INTERSECTIONS UNLESS THAT WILL BE
-        // DONE ELSEWHERE.
-        //You can give a glow to the boxOb if wanted.
-        //This lights up latern if touched.
-        // if (!this._wallObs[0].isTouched) {
-        //     this._wallObs[0].setEmissiveTexture();
-        // }
-        // this._wallObs.forEach(wallObParent => {
-        // player.mesh.actionManager.registerAction(
-        //     new ExecuteCodeAction(
-        //     {
-        // trigger: ActionManager.OnIntersectionEnterTrigger,
-        // parameter: lantern.mesh
-        // },
-        // () => {
-        //if the lantern is not lit, light it up & reset sparkler timer
-        // if (!lantern.isTouched && player.sparkLit) {
-        //     player.lanternsLit += 1;
-        //     lantern.setEmissiveTexture();
-        //     player.sparkReset = true;
-        //     player.sparkLit = true;
-        //
-        //     //SFX
-        //     player.lightSfx.play();
-        // }
-        //if the lantern is lit already, reset the sparkler timer
-        // else if (lantern.isLit) {
-        //     player.sparkReset = true;
-        //     player.sparkLit = true;
-        //
-        //     //SFX
-        //     player.sparkResetSfx.play();
-        // }
-        // }
-        // )
-        //      );
-        //  });
-    }
-}

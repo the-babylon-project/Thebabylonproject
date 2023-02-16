@@ -9,19 +9,14 @@ import {
     Mesh,
     Color3,
     Color4,
-    ShadowGenerator,
     GlowLayer,
     PointLight,
     FreeCamera,
-    CubeTexture,
-    Sound,
     PostProcess,
     Effect,
-    SceneLoader,
     Matrix,
     MeshBuilder,
     Quaternion,
-    AssetsManager,
     EngineFactory,
     StandardMaterial, HemisphericLight
 } from "@babylonjs/core";
@@ -94,19 +89,17 @@ class App {
                     break;
                 case State.PREGAME:
                     this._scene.render();
-                    this._goToPreGame();
                     break;
                 case State.GAME:
-                    // if (this._player.win) {
-                    //     //TODO: goto win function
-                    //     this._ui.stopTimer();
-                    // }
-                    // if (this._player.lose) {
-                    //     this._goToStart();
-                    //     this._ui.quit = false;
-                    // }
+                    if (!this._player.win) {
+                        this._goToLose();
+                        this._ui.stopTimer();
+                    }
+                    if (this._ui.quit) {
+                        this._goToStart();
+                        this._ui.quit = false;
+                    }
                     this._scene.render();
-                    this._goToGame();
                     break;
                 case State.OVER:
                     this._scene.render();
@@ -346,7 +339,7 @@ class App {
 
         //Actions to complete once the game loop is setup
         //This 'outer' is our character.
-        scene.getMeshByName("outer").position = new Vector3(0, 80, 15); //move the player to the start position
+        scene.getMeshByName("outer").position = scene.getMeshByName("sphere").getAbsolutePosition(); //move the player to the start position
         this._ui.startTimer();
 
         //get rid of start scene, switch to gamescene and change states
@@ -510,23 +503,25 @@ class App {
 
         //temp light for entire scene
         const lightTemp = new HemisphericLight('lightTemp', new Vector3(0,1,0), this._scene)
+
         // scene.ambientColor = new Color3(0.34509803921568627, 0.5568627450980392, 0.8352941176470589);
         // scene.clearColor = new Color4(0.01568627450980392, 0.01568627450980392, 0.20392156862745098);
 
-        const shadowLight = new PointLight("sparklight", new Vector3(0, 0, 0), scene);
-        shadowLight.diffuse = new Color3(0.08627450980392157, 0.10980392156862745, 0.15294117647058825);
-        shadowLight.intensity = 35;
-        shadowLight.radius = 1;
-        const shadowGenerator = new ShadowGenerator(1024, shadowLight);
-        shadowGenerator.darkness = 0.4;
+        // const shadowLight = new PointLight("sparklight", new Vector3(0, 0, 0), scene);
+        // shadowLight.diffuse = new Color3(0.08627450980392157, 0.10980392156862745, 0.15294117647058825);
+        // shadowLight.intensity = 35;
+        // shadowLight.radius = 1;
+        // const shadowGenerator = new ShadowGenerator(1024, shadowLight);
+        // shadowGenerator.darkness = 0.4;
 
         //Create the player
-        this._player = new PlayerSphere(this.assets, scene, shadowGenerator, this._input);
+        this._player = new PlayerSphere(this.assets, scene, this._input);
+        lightTemp.parent = this._player;
 
         const camera = this._player.activatePlayerCamera();
         //TODO: need to ensure activate player camera is attaching to player.
         //set up collision chekcs
-        this._environment.checkWallObs(this._player);
+        this._environment.checkBoxObs(this._player);
 
         //--Transition post process--
         scene.registerBeforeRender(() => {
@@ -550,12 +545,13 @@ class App {
                 this._ui.updateHud();
             }
         })
+        //I can take this out in wallobs or here.
         //TODO: **NOTE**  glow layer was added here in tutorial foreach lantern. it may need to be done during rendering.--
-        const gl = new GlowLayer("glow", scene);
-        gl.intensity = 0.4;
-        this._environment._wallObs.forEach(box => {
-            gl.addIncludedOnlyMesh(box.mesh);
-        });
+        // const gl = new GlowLayer("glow", scene);
+        // gl.intensity = 0.4;
+        // this._environment._boxObs.forEach(box => {
+        //     gl.addIncludedOnlyMesh(box.mesh);
+        // });
     }
 }
 new App();
