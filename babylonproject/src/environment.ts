@@ -4,10 +4,6 @@ import {
     SceneLoader,
     PBRMetallicRoughnessMaterial,
     Mesh,
-    MeshBuilder,
-    StandardMaterial,
-    GlowLayer,
-    Texture,
     Color3,
     ActionManager,
     ExecuteCodeAction,
@@ -21,13 +17,11 @@ export class Environment {
 
     //Meshes
     private _boxObs: Array<WallObstacle>; //this will be used to _checkBoxObs with action manager
-    private _lightmtl: PBRMetallicRoughnessMaterial; // emissive texture
+    private _lightmtl: PBRMetallicRoughnessMaterial;
     constructor(scene: Scene) {
         this._scene = scene;
         this._boxObs = [];
         const lightmtl = new PBRMetallicRoughnessMaterial("boxOb mesh light", this._scene);
-        //change values and texture
-        // lightmtl.emissiveTexture = new Texture("/textures/litLantern.png", this._scene, true, false);
         lightmtl.emissiveColor = new Color3(0.8784313725490196, 0.7568627450980392, 0.6235294117647059);
         this._lightmtl = lightmtl;
     }
@@ -36,10 +30,6 @@ export class Environment {
         //load course
         const assets = await this._loadAssets();
         const boxObHolder = new TransformNode("boxObHolder", this._scene);
-
-
-        // this is loading the whole scene, iterating through the elements and doing check collision and shadow setters.
-        // the purpose of brining in load assets is to add collisons and shadows, and make ispickable or not on every part.
         assets.allMeshes.forEach(m => {
             m.receiveShadows = true;
             m.checkCollisions = true;
@@ -64,7 +54,7 @@ export class Environment {
                 mesh.isVisible = false;
                 mesh.setParent(boxObHolder);
                 let newWallOb = new WallObstacle(this._lightmtl, mesh, this._scene, mesh.getAbsolutePosition());
-                console.log(mesh.getAbsolutePosition())
+                // console.log(mesh.getAbsolutePosition())
                 this._boxObs.push(newWallOb);
             }
         });
@@ -74,27 +64,11 @@ export class Environment {
     public async _loadAssets() {
         //TODO: pick out the parent 'Mesh' of these, when we call this in load, it will iterate through each parent mesh
         // and add the params receive shadoes, is pickable, and checkCollisions..
-        //load track
-        // const boxObHolder = new TransformNode("boxObHolder", this._scene);
 
         const result = await SceneLoader.ImportMeshAsync(null, "./models/", "envSetting_50+10.glb", this._scene);
         let env = result.meshes[0]; //gets total env
         let allMeshes = env.getChildMeshes(false); //this doesn't include 'parent wall'.
         let boxChildren = allMeshes.filter((mesh) => mesh.name === "boxOb");
-        //I want to return boxObs as a list of boxObs that I can iterate.
-        // for (let mesh of boxChildren) {
-        //     if (mesh instanceof Mesh) {
-        //         let glowLayer = new GlowLayer("glow", this._scene);
-        //         //TODO: customize glow
-        //         glowLayer.intensity = 1.0;
-        //         glowLayer.addIncludedOnlyMesh(mesh);
-        //         // mesh.checkCollisions = true;
-        //         mesh.isVisible = false;
-        //         mesh.setParent(boxObHolder);
-        //         let newWallOb = new WallObstacle(this._lightmtl, mesh, this._scene, mesh.getAbsolutePosition(), glowLayer);
-        //         this._boxObs.push(newWallOb);
-        //     }
-        // }
         return {
             //return the track and the wall obstacles as meshes.
             env: env,
@@ -104,39 +78,30 @@ export class Environment {
     }
     public checkBoxObs(player: PlayerSphere) {
 
-        // if (!this._boxObs[0].isTouched) {
-        //     this._boxObs[0].setEmissiveTexture();
-        // }
-        // this._boxObs.forEach(boxOb => {
-        //     player.mesh.actionManager.registerAction(
-        //         new ExecuteCodeAction(
-        //             {
-        //                 trigger: ActionManager.OnIntersectionEnterTrigger,
-        //                 parameter: boxOb.mesh
-        //             },
-        //             () => {
-        //                 // if the lantern is not lit, light it up & reset sparkler timer
-        //                 if (!boxOb.isTouched && player.position.z === boxOb.position.z) {
-        //                     player.lanternsLit += 1;
-        //                     boxOb.setEmissiveTexture();
-        //                     player.sparkReset = true;
-        //                     player.sparkLit = true;
-        //
-        //                     //SFX
-        //                     player.lightSfx.play();
-        //                 }
-        //                 // if the lantern is lit already, reset the sparkler timer
-        //                 else if (boxOb.isLit) {
-        //                     player.sparkReset = true;
-        //                     player.sparkLit = true;
-        //
-        //                     //SFX
-        //                     player.sparkResetSfx.play();
-        //                 }
-        //             }
-        //         )
-        //     );
-        // });
+        if (!this._boxObs[0].isTouched) {
+            this._boxObs[0].setEmissiveTexture();
+        }
+        this._boxObs.forEach(boxOb => {
+            player.mesh.actionManager.registerAction(
+                new ExecuteCodeAction(
+                    {
+                        trigger: ActionManager.OnIntersectionEnterTrigger,
+                        parameter: boxOb.mesh
+                    },
+                    () => {
+
+                        if (!boxOb.isTouched) {
+                            boxOb.setEmissiveTexture();
+                        }
+                        // if the lantern is lit already, reset the sparkler timer
+                        else if (boxOb.isTouched) {
+                            // player.sparkReset = true;
+                            // player.sparkLit = true;
+                        }
+                    }
+                )
+            );
+        });
     }
 }
 

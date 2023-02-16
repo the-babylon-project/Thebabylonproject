@@ -62,15 +62,34 @@ export class Hud {
         pauseBtn.onPointerDownObservable.add(() => {
             this._pauseMenu.isVisible = true;
             playerUI.addControl(this._pauseMenu);
-            this.pauseBtn.isHitTestVisible = false;
+            this.pauseBtn.isHitTestVisible = true;
         });
+        const stackPanel = new StackPanel();
+        stackPanel.height = "100%";
+        stackPanel.width = "100%";
+        stackPanel.top = "14px";
+        stackPanel.verticalAlignment = 0;
+        playerUI.addControl(stackPanel);
+
+        const clockTime = new TextBlock();
+        clockTime.name = "clock";
+        clockTime.textHorizontalAlignment = TextBlock.HORIZONTAL_ALIGNMENT_CENTER;
+        clockTime.fontSize = "48px";
+        clockTime.color = "white";
+        clockTime.text = "11:00";
+        clockTime.resizeToFit = true;
+        clockTime.height = "96px";
+        clockTime.width = "220px";
+        clockTime.fontFamily = "Viga";
+        stackPanel.addControl(clockTime);
+        this._clockTime = clockTime;
 
         //could implement tiny hint menu but really who needs it...
 
         //THESE MENUS HE IS LOADING HERE ARE MADE BELOW.
         this._createPauseMenu();
-        this._createControlsMenu();
-        this._loadSounds(scene);
+        // this._createControlsMenu();
+        // this._loadSounds(scene);
 
     }
     public updateHud(): void {
@@ -78,9 +97,9 @@ export class Hud {
         //STOP TIMER IS BOOL
         if (!this._stopTimer && this._startTime != null) {
             let curTime = Math.floor((new Date().getTime() - this._startTime) / 1000) + this._prevTime; // divide by 1000 to get seconds
-
             this.time = curTime; //keeps track of the total time elapsed in seconds
             this._clockTime.text = this._formatTime(curTime);
+
         }
     }
     //---- Game Timer ----
@@ -92,8 +111,17 @@ export class Hud {
         this._stopTimer = true;
     }
     private _formatTime(time: number): string {
-
-        return "";
+        //todo modify this to show seconds passed.
+        let minsPassed = Math.floor(time / 60); //seconds in a min
+        let secPassed = time % 240; // goes back to 0 after 4mins/240sec
+        //gameclock works like: 4 mins = 1 hr
+        // 4sec = 1/15 = 1min game time
+        if (secPassed % 4 == 0) {
+            this._mString = Math.floor(minsPassed / 4) + 11;
+            this._sString = (secPassed / 4 < 10 ? "0" : "") + secPassed / 4;
+        }
+        let day = (this._mString == 11 ? " PM" : " AM");
+        return (this._mString + ":" + this._sString);
     }
 
     //---- Pause Menu Popup ----
@@ -174,12 +202,13 @@ export class Hud {
             this.transition = true;
 
             //--SOUNDS--
-            this.quitSfx.play();
-            if(this._pause.isPlaying){
-                this._pause.stop();
-            }
+            // this.quitSfx.play();
+            // if(this._pause.isPlaying){
+            //     this._pause.stop();
+            // }
         })
     }
+
 
 
     private _createControlsMenu(): void {

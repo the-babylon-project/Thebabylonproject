@@ -8,12 +8,12 @@ import {
     ExecuteCodeAction,
     ActionManager,
     Observable,
-    FramingBehavior, ArcRotateCamera, Scalar, Quaternion
+    FramingBehavior, ArcRotateCamera, Scalar, Quaternion, FreeCamera
 } from "@babylonjs/core";
 import { PlayerInput } from "./inputController";
 
 export class PlayerSphere extends TransformNode {
-    public camera: ArcRotateCamera;
+    public camera: UniversalCamera;
     public scene: Scene;
     private _input: PlayerInput;
     public mesh: Mesh; //outer collisionbox of Player
@@ -30,7 +30,7 @@ export class PlayerSphere extends TransformNode {
     private _gravity: Vector3 = new Vector3();
     private _grounded: boolean;
     private _climbing: boolean;
-    private _forwardMotion : number; //may have to change to Vector 3 to establish z variable.
+    private _forwardMotion: number; //may have to change to Vector 3 to establish z variable.
     //constants
     PLAYER_SPEED
 
@@ -42,7 +42,7 @@ export class PlayerSphere extends TransformNode {
 
     //Player
     // Sphere variables
-    public win: boolean = false; //whether the game is won
+    public win: boolean = true; //whether the game is won
     public lose: boolean = false; //if we hit the wall.
     public boxObHit: boolean = true;
     //misc sounds
@@ -112,6 +112,7 @@ export class PlayerSphere extends TransformNode {
 
         this._input = input;
     }
+
     //--GROUND DETECTION--
     //RAYCASTING IS THE MAIN WAY OF DETECTING THE GROUND BENEATH Player
     // Sphere...POSSIBLE WINDOW IN FRONT OF SPHERE.
@@ -136,6 +137,7 @@ export class PlayerSphere extends TransformNode {
             return Vector3.Zero();
         }
     }
+
     private _isClimbing(): boolean {//these two things could be used to detect if sphere is climbing to determine if gravity should be applied,
         //doing this could enable us to begin our downward falling reaction to be gradual after the climb and not constant.
         if (this._floorRaycast(0, 0, .6).equals(Vector3.Zero())) {
@@ -144,25 +146,21 @@ export class PlayerSphere extends TransformNode {
             return true;
         }
     }
+
     private _updateGroundDetection(): void {
         this._deltaTime = this.scene.getEngine().getDeltaTime() / 1000.0;
         this._gravity = this._gravity.addInPlace(Vector3.Up().scale(this._deltaTime * PlayerSphere.GRAVITY));
         this._grounded = false;
-        //if not grounded
-        // if (!this._isClimbing()) {
-        //     //if the body isnt grounded, check if it's on a slope and was either falling or walking onto it
-        //     if (this._checkSlope() && this._gravity.y <= 0) {
-        //         console.log("slope")
-        //         //if you are considered on a slope, you're able to jump and gravity wont affect you
-        //         this._gravity.y = 0;
-        //         this._jumpCount = 1;
-        //         this._grounded = true;
-        //     } else {
-        //         //keep applying gravity
-        //         this._gravity = this._gravity.addInPlace(Vector3.Up().scale(this._deltaTime * PlayerSphere.GRAVITY));
-        //         this._grounded = false;
-        //     }
-        // }
+        // if not grounded
+        if (!this._isClimbing()) {
+            if (this._gravity.y >= 0) {
+                this._gravity.y = -2.8;
+                this._grounded = true;
+            } else {
+                this._gravity = this._gravity.addInPlace(Vector3.Up().scale(this._deltaTime * PlayerSphere.GRAVITY));
+                this._grounded = false;
+            }
+        }
 
         //limit the speed of gravity to the negative of the jump power
         if (this._gravity.y < -PlayerSphere.CLIMB_FORCE) {
@@ -175,21 +173,16 @@ export class PlayerSphere extends TransformNode {
 
         //update our movement to account for climbing
         this.mesh.moveWithCollisions(this._moveDirection.addInPlace(this._gravity));
-
         if (this._isClimbing()) {
             this._gravity.y = 0;
             this._climbing = true;
-            //keep track of last known ground position
-            // this._lastGroundPos.copyFrom(this.mesh.position);
-
         }
-
-        //Jump detection
+        //space key detection
         if (this._input.spaceKeyDown) {
             this._gravity.y = PlayerSphere.CLIMB_FORCE;
         }
-
     }
+
     private _updateFromControls(): void {
         //we're going to set up all the Player
         // Sphere controls to climb, and to left and right.
@@ -197,7 +190,7 @@ export class PlayerSphere extends TransformNode {
 
         this._moveDirection = Vector3.Zero();
         this._h = this._input.horizontal; //right, x
-        this._v = this._input.vertical; //fwd, z
+        this._v = this._input.vertical; //up, y
 
         //--MOVEMENTS BASED ON CAMERA (as it rotates)--
         let up = this._camRoot.up; //changed from fwd to up
@@ -209,7 +202,7 @@ export class PlayerSphere extends TransformNode {
         let move = correctedHorizontal.addInPlace(correctedVertical);
 
         //clear y so that the character doesnt fly up, normalize for next step, taking into account whether we've DASHED or not
-        this._moveDirection = new Vector3((move).normalize().x , 0, 0);
+        this._moveDirection = new Vector3((move).normalize().x, 0, 0);
 
         //clamp the input value so that diagonal movement isn't twice as fast
         let inputMag = Math.abs(this._h) + Math.abs(this._v);
@@ -223,7 +216,6 @@ export class PlayerSphere extends TransformNode {
         //final movement that takes into consideration the inputs
         this._moveDirection = this._moveDirection.scaleInPlace(this._inputAmt * PlayerSphere.PLAYER_SPEED);
 
-        //check if there is movement to determine if rotation is needed
         let input = new Vector3(this._input.horizontalAxis, this._input.verticalAxis, 0); //along which axis is the direction
         if (input.length() == 0) {//if there's no input detected, prevent rotation and keep Player
             // Sphere in same rotation
@@ -236,6 +228,7 @@ export class PlayerSphere extends TransformNode {
         let targ = Quaternion.FromEulerAngles(0, angle, 0);
         this.mesh.rotationQuaternion = Quaternion.Slerp(this.mesh.rotationQuaternion, targ, 10 * this._deltaTime);
     }
+
     private _hasBoxHit(): boolean {
         if (this._floorRaycast(0, 0, 99).equals(Vector3.Zero())) {
             return false;
@@ -243,82 +236,68 @@ export class PlayerSphere extends TransformNode {
             return true;
         }
     }
-
-    //https://www.babylonjs-playground.com/#FUK3S#8
-    //https://www.html5gamedevs.com/topic/7709-scenepick-a-mesh-that-is-enabled-but-not-visible/
-    //check whether a mesh is sloping based on the normal
-    //WE WONT HAVE ANY COLLISION MESHES THAT ARE INVISIBLE UNLESS WE CREATE A BOX AROUND OUR PLAY FIELD TO DETECT COLLISION
-    // IF Player
-    // Sphere LEFT PLAY ZONE, RATHER THAN CHECKING COORDINATES, JUST DO IT WITH COLLISION LIKE EVERYTHING ELSE.
-
-    //I could possibly just make this updateBoundsDetection.
-    private _updateBoundsDetection(): void {
-
-        return;
-    }
-
     //--GAME UPDATES--
     private _beforeRenderUpdate(): void {
         this._updateFromControls();
-        // this.mesh.moveWithCollisions(this._moveDirection);
         this._updateGroundDetection();
     }
 
-    public activatePlayerCamera(): ArcRotateCamera {
+    public activatePlayerCamera(): UniversalCamera {
         this.scene.registerBeforeRender(() => {
-
             this._beforeRenderUpdate();
             this._updateCamera();
-
-
-        })
+        });
         return this.camera;
     }
 
-    //--CAMERA--
     private _updateCamera(): void {
-
-        //set this for drawing up close to sphere and relaxing once through box, quick movement.
-        // if (this.mesh.intersectsMesh(this.scene.getMeshByName("boxOb"))) {
-        //     if (this._input.horizontalAxis > 0) { //rotates to the right
-        //         this._camRoot.rotation = Vector3.Lerp(this._camRoot.rotation, new Vector3(this._camRoot.rotation.x, Math.PI / 2, this._camRoot.rotation.z), 0.4);
-        //     } else if (this._input.horizontalAxis < 0) { //rotates to the left
-        //         this._camRoot.rotation = Vector3.Lerp(this._camRoot.rotation, new Vector3(this._camRoot.rotation.x, Math.PI, this._camRoot.rotation.z), 0.4);
-        //     }
-        // }
-
-        //update camera postion up/down movement
-        let centerPlayer = this.mesh.position.y + 2;
-        this._camRoot.position = Vector3.Lerp(this._camRoot.position, new Vector3(this.mesh.position.x, centerPlayer, this.mesh.position.z), 0.4);
+        if (this._camRoot.position.x < -25) {
+            this._camRoot.position.x = -25;
+        } else if (this._camRoot.position.x > 25) {
+            this._camRoot.position.x = 25;
+        }
     }
 
-    private _setupPlayerCamera(): ArcRotateCamera {
+    private _setupPlayerCamera(): UniversalCamera {
+        // Set up camera nodes
         this._camRoot = new TransformNode("root");
-        this._camRoot.position = new Vector3(0, 0,0); //initialized at (0,0,0) may change to 0, 52, -50 where Player
-        // Sphere is.
-
-        //rotations along the x-axis (up/down tilting)
+        this._camRoot.position = new Vector3(0, 52, -55); //initialized at (0,0,0)
+        //to face the player from behind (180 degrees)
+        this._camRoot.rotation = new Vector3(0, Math.PI, 0);
+        this.camera = new UniversalCamera("playerCamera", new Vector3(0, 56, -56), this.scene);
         let yTilt = new TransformNode("ytilt");
-        //adjustments to camera view to point down at our Player
-        // Sphere
+        //adjustments to camera view to point down at our player
         yTilt.rotation = PlayerSphere.ORIGINAL_TILT;
         this._yTilt = yTilt;
         yTilt.parent = this._camRoot;
-
-        //our actual camera that's pointing at our root's position
-        this.camera = new ArcRotateCamera('playerCamera', 0, Math.PI / 2, 15, new Vector3(0, 0, 0), this.scene);
         this.camera.lockedTarget = this._camRoot.position;
-        this.camera.fov = 0.47350045992678597;
+        this.camera.fov = 6;
         this.camera.parent = yTilt;
 
-        this.scene.activeCamera = this.camera;
-        return this.camera;
+        // camera.parent = this._camRoot
         //
-        // if (camera.position.x < -25) {
-        //     camera.position.x = -25;
-        // } else if (camera.position.x > 25) {
-        //     camera.position.x = 25;
-        // }
+        // const lookDirection = this._camRoot.position.clone();
+        // lookDirection.normalize();
+        // const angleY = Math.atan2(lookDirection.x, lookDirection.z);
+        // const angleX = -1 * Math.atan2(lookDirection.y, Math.sqrt(lookDirection.x * lookDirection.x + lookDirection.z * lookDirection.z));
+        // const maxRotation = 30 * Math.PI / 180;
+        // this._camRoot.rotation.y = Scalar.Lerp(
+        //     this._camRoot.rotation.y,
+        //         Math.min(Math.max(angleY, -maxRotation), maxRotation),
+        //         0.01
+        //     );
+        // this._camRoot.rotation.x = Scalar.Lerp(
+        //     this._camRoot.rotation.x,
+        //         Math.min(Math.max(angleX, -maxRotation), maxRotation),
+        //         0.10
+        //     );
+        // // this._camRoot.fov = .6;
+        // this._camRoot.parent = this._yTilt;
+        return this.camera;
+    }
+
+    //
+
         //
         // // TODO: Limit camera rotation
         //
@@ -351,24 +330,10 @@ export class PlayerSphere extends TransformNode {
         //     );
         //
         // });
-    }
+    // }
 
 
     private _loadSounds(scene: Scene): void {
-        //EVERYTHING COMING FROM SOUND FOLDER
-        // this._climbingSfx = new Sound("jumping", "./sounds/187024__lloydevans09__jump2.wav", scene, function () {
-        // }, {
-        //     volume: 0.25
-        // });
-        // this._movingSfx = new Sound("walking", "./sounds/Concrete 2.wav", scene, function () {
-        // }, {
-        //     loop: true,
-        //     volume: 0.20,
-        //     playbackRate: 0.6
-        // });
-        // this._resetSfx = new Sound("reset", "./sounds/Retro Magic Protection 25.wav", scene, function () {
-        // }, {
-        //     volume: 0.25
-        // });
+        //load sounds
     }
 }
