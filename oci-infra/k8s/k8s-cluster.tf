@@ -4,6 +4,8 @@ provider "kubernetes" {
 
 provider "oci" {
   region = var.region
+  tenancy_ocid     = var.tenancy_ocid
+  user_ocid        = var.user_ocid
 }
 
 resource "kubernetes_namespace" "babylon_namespace" {

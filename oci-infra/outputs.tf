@@ -11,5 +11,9 @@ output "node_pool_id" {
 }
 
 output "buckets" {
-  value = oci_objectstorage_bucket.dev_bucket.name
+  value = oci_objectstorage_bucket.dev_bucket.id
+}
+
+output "all-availability-domains-in-your-tenancy" {
+  value = data.oci_identity_availability_domains.ads.availability_domains
 }

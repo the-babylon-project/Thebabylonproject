@@ -28,23 +28,18 @@ variable "k8s-cluster-id"{
   description = "The OCID of the k8s cluster"
 }
 
-# variable "tenancy_ocid" {
-#   default = ""
-# }
-
-# variable "user_ocid" {
-#   default = ""
-# }
+variable "tenancy_ocid" {
+  default = ""
+}
+variable "user_ocid" {
+  default = ""
+}
 
 # variable "fingerprint" {
 #   default = ""
 # }
 
 # variable "private_key_path" {
-#   default = ""
-# }
-
-# variable "compartment_ocid" {
 #   default = ""
 # }
 
