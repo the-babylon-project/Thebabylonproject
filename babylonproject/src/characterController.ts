@@ -271,7 +271,7 @@ export class PlayerSphere extends TransformNode {
         this._yTilt = yTilt;
         yTilt.parent = this._camRoot;
         this.camera.lockedTarget = this._camRoot.position;
-        this.camera.fov = 6;
+        this.camera.fov = 1;
         this.camera.parent = yTilt;
 
         // camera.parent = this._camRoot
