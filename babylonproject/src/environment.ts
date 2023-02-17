@@ -66,7 +66,7 @@ export class Environment {
         //TODO: pick out the parent 'Mesh' of these, when we call this in load, it will iterate through each parent mesh
         // and add the params receive shadoes, is pickable, and checkCollisions..
 
-        const result = await SceneLoader.ImportMeshAsync(null, "./models/", "envSetting_50+10.glb", this._scene);
+        const result = await SceneLoader.ImportMeshAsync(null, "./models/", "envSetting_200-10.glb", this._scene);
         let env = result.meshes[0]; //gets total env
         let allMeshes = env.getChildMeshes(false); //this doesn't include 'parent wall'.
         let boxChildren = allMeshes.filter((mesh) => mesh.name === "boxOb");
