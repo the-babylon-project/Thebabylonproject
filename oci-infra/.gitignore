@@ -41,3 +41,5 @@ terraform.rc
 
 # End of https://www.toptal.com/developers/gitignore/api/terraform
 backend/package-lock.json
+os_config.txt
+

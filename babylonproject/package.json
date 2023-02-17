@@ -9,17 +9,19 @@
     "@babylonjs/core": "^5.46.0",
     "@babylonjs/gui": "^5.46.0",
     "@babylonjs/loaders": "^5.46.0",
+    "@babylonjs/serializers": "^5.46.0",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/user-event": "^13.5.0",
+    "auth0-spa-ts": "^1.13.11",
     "babylonjs-loaders": "^5.46.0",
     "cannon": "^0.6.2",
+    "dotenv": "^16.0.3",
+    "oci-sdk": "^2.52.0",
     "path-browserify": "^1.0.1",
     "prop-types": "^15.8.1",
     "regenerator-runtime": "^0.13.11",
     "stream-browserify": "^3.0.0",
-    "web-vitals": "^2.1.4",
-    "@babylonjs/serializers": "^5.46.0"
-
+    "web-vitals": "^2.1.4"
   },
   "scripts": {
     "build": "webpack",

@@ -25,6 +25,9 @@ import { PlayerSphere } from "./characterController";
 import { Hud } from "./ui";
 import { AdvancedDynamicTexture, StackPanel, Button, TextBlock, Rectangle, Control, Image } from "@babylonjs/gui";
 import { Environment } from "./environment";
+import * as os from 'oci-objectstorage';
+import {LeaderboardEntry} from "./LeaderboardEntry";
+
 
 enum State{
 
@@ -41,6 +44,12 @@ class App {
     public assets;
     private _input: PlayerInput;
     private _player: PlayerSphere;
+    private _players : Array<string>;
+    private _playername: string;
+    private _playerId: string;
+    public playerDidWin: boolean;
+    public playerDidLose: boolean;
+    public playerDidDraw: boolean;
     private _ui: Hud;
     private _environment;
     private _camera;
@@ -138,6 +147,7 @@ class App {
 
         return this._canvas;
     }
+
 
     private async _goToStart() {
         this._engine.displayLoadingUI(); //make sure to wait for start to load
@@ -323,8 +333,8 @@ class App {
 
         //--SOUNDS--
     }
-//
-    private _showWin(): void {
+
+    private async _showWin(): Promise<void> {
 
         this._player.onRun.clear();
 
@@ -488,7 +498,19 @@ class App {
         //TODO: need to ensure activate player camera is attaching to player.
         //set up collision chekcs
         this._environment.checkBoxObs(this._player);
-        // console.log('camera', camera, 'this._env', this._environment, 'this._player', this._player)
+        //--initialize player into an empty leaderboard entry--
+        const playerSphere = this._player;
+        const leaderboardEntry: LeaderboardEntry = {
+            playerId: playerSphere.playerId,
+            playername: playerSphere.playername,
+            playerwins: playerSphere.playerwins,
+            playerlosses: playerSphere.playerlosses,
+            playerdraws: playerSphere.playerdraws,
+            playerwinrate: playerSphere.playerwinrate,
+            playerrank: playerSphere.playerrank,
+        };
+
+
         //--Transition post process--
         scene.registerBeforeRender(() => {
             if (this._ui.transition) {

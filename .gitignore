@@ -39,4 +39,7 @@ override.tf.json
 .terraformrc
 terraform.rc
 
+#Ignore secrets.env
+secrets.env
+
 # End of https://www.toptal.com/developers/gitignore/api/terraform

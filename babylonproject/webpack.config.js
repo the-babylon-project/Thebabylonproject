@@ -7,7 +7,7 @@ const appDirectory = fs.realpathSync(process.cwd());
 module.exports = {
     entry: path.resolve(appDirectory, "src/app.ts"),
     output: {
-        path: path.resolve(appDirectory, "dist"),
+        path: path.resolve(appDirectory, "app"),
         //name for the js file that is created/compiled in memory
         filename: 'js/babylonBundle.js'
     },
@@ -17,7 +17,7 @@ module.exports = {
     },
     devServer: {
         host: '0.0.0.0',
-        port: 8081,
+        port: 8080,
         static: path.resolve(appDirectory, "public"), //tells webpack to serve from the public folder
         // publicPath: '/',
         hot: true

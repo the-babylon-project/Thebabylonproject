@@ -64,6 +64,15 @@ export class PlayerSphere extends TransformNode {
     //observables
     public onRun = new Observable();
 
+    //player stats
+    public playerId: string;
+    public playername: string;
+    public playerwins: number;
+    public playerlosses: number;
+    public playerdraws: number;
+    public playerwinrate: number;
+    public playerrank: number;
+
     constructor(assets, scene: Scene, input?: PlayerInput) {
         super("PlayerSphere", scene);
         this.scene = scene;

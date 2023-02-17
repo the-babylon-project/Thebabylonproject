@@ -1,6 +1,6 @@
 FROM node:18-alpine as build
 WORKDIR /app
-ENV PATH /app/node_modules/.bin:$PATH
+ENV PATH babylonproject/app/node_modules/.bin:$PATH
 # ENV NODE_ENV production
 COPY package*.json /app/
 RUN npm install --silent
