@@ -2,6 +2,8 @@ import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
 import "@babylonjs/loaders/glTF";
 //TODO: fix raycast mechanic that stops forward motion.
+//TODO: Change camera or do different implementations.
+//TODO: textures and different lighting.
 //TODO: set up win lose checkCollisions (fairly ez)
 //TODO: GUIs for game states
 //TODO: Colyseus implementation.
