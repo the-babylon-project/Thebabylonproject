@@ -19,9 +19,8 @@ import {
     ArcFollowCamera
 } from "@babylonjs/core";
 import { PlayerInput } from "./inputController";
-window.CANNON = require( 'cannon' );
 
-
+//TODO: we have no reason to detect if player is 'grounded'
 export class PlayerSphere extends TransformNode {
     public camera: UniversalCamera;
     public scene: Scene;
@@ -78,7 +77,7 @@ export class PlayerSphere extends TransformNode {
         this.scene = scene;
 
         //set up sounds
-        this._loadSounds(this.scene);
+        // this._loadSounds(this.scene);
         //camera
         this._setupPlayerCamera();
         this.mesh = assets.mesh;
@@ -130,38 +129,35 @@ export class PlayerSphere extends TransformNode {
         this._input = input;
     }
 
+
     //--GROUND DETECTION--
     //RAYCASTING IS THE MAIN WAY OF DETECTING THE GROUND BENEATH Player
     // Sphere...POSSIBLE WINDOW IN FRONT OF SPHERE.
     //THIS IS A BIG ONE AND MAY SOLVE OUR OBSTACLE PROBLEM
     //SET RAYCAST DIRECTLY IN FRONT OF SPHERE. MAYBE WE CAN CUSTOMIZE RAY SIZE LIKE 4X4.
     //Send raycast to the floor to detect if there are any hits with meshes below the character
-    private _floorRaycast(offsetx: number, offsetz: number, raycastlen: number): Vector3 {
-        //position the raycast from bottom center of mesh
-        let raycastFloorPos = new Vector3(this.mesh.position.x + offsetx, this.mesh.position.y + 0.5, this.mesh.position.z + offsetz);
-        let ray = new Ray(raycastFloorPos, Vector3.Up().scale(-1), raycastlen);
+    private _boxObRaycast(offsetx: number, offsetz: number, raycastlen: number): Vector3 {
+
 
         //defined which type of meshes should be pickable
         let predicate = function (mesh) {
-            return mesh.isPickable && mesh.isEnabled();
+            return mesh.isPickable && mesh.isEnabled() && mesh.name === 'boxOb';
         }
 
-        let raycast2 = new Vector3(this.mesh.position.x, this.mesh.position.y + 0.5, this.mesh.position.z - .25);
-        let ray2 = new Ray(raycast2, Vector3.Forward().scale(1), 1.5);
+        let raycastOrigin = this.mesh.position.clone();
+        let ray = new Ray(raycastOrigin, Vector3.Forward(), 3);
 
 
         let pick = this.scene.pickWithRay(ray, predicate);
-        let pick2 = this.scene.pickWithRay(ray2, predicate);
 
         if (pick.hit) { //we could maybe stop gravity right in front of box.
             return pick.pickedPoint;
-        } else if (pick2.hit) {
-            return pick2.pickedPoint;
-        } else { //not grounded
-            return Vector3.Zero();
+            // TODO: will be used to say, ok if box is in front of us, bring the camera around and behind us very quick.
+            //todo: like alpha, beta == 0.normalize(). camera z+++;
         }
     }
-    private _checkBoxOb(): boolean{
+
+    private _checkBoxOb(): boolean {
 
         let predicate = function (mesh) {
             return mesh.isPickable && mesh.isEnabled();
@@ -178,20 +174,23 @@ export class PlayerSphere extends TransformNode {
         if (pick.hit && !pick.getNormal().equals(Vector3.Up())) {
             return true;
 
-        }if (pick2.hit && !pick2.getNormal().equals(Vector3.Forward())) {
-            if(pick2.pickedMesh.name.includes("boxOb")) {
+        }
+        if (pick2.hit && !pick2.getNormal().equals(Vector3.Forward())) {
+            if (pick2.pickedMesh.name.includes("boxOb")) {
                 return true;
             }
         }
     }
+
     private _isGrounded(): boolean {//these two things could be used to detect if sphere is climbing to determine if gravity should be applied,
         //doing this could enable us to begin our downward falling reaction to be gradual after the climb and not constant.
-        if (this._floorRaycast(0, 0, .6).equals(Vector3.Zero())) {
+        if (this._boxObRaycast(0, 0, .6).equals(Vector3.Zero())) {
             return false;
         } else {
             return true;
         }
     }
+
     //
     private _updateGroundDetection(): void {
         this._deltaTime = this.scene.getEngine().getDeltaTime() / 1000.0;
@@ -332,6 +331,7 @@ export class PlayerSphere extends TransformNode {
             0.10
         );
     }
+
     private _setupPlayerCamera(): UniversalCamera {
         this._camRoot = new TransformNode("root");
 
@@ -345,7 +345,8 @@ export class PlayerSphere extends TransformNode {
         this.scene.activeCamera = this.camera;
         return this.camera;
     }
-    private _loadSounds(scene: Scene): void {
-        //load sounds
-    }
 }
+
+    // private _loadSounds(scene: Scene): void {
+    //     //load sounds
+    // }

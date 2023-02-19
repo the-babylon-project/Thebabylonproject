@@ -4,12 +4,7 @@ import {
     Mesh,
     Vector3,
     PointLight,
-    Texture,
-    Color4,
-    ParticleSystem,
-    AnimationGroup,
     PBRMetallicRoughnessMaterial,
-    MeshBuilder, TransformNode, GlowLayer
 } from "@babylonjs/core";
 
 //THIS WILL BE THE WALLOBSTACLE CLASS

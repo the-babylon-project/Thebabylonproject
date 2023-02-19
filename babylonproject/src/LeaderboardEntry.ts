@@ -1,9 +1,6 @@
 import { ObjectStorageClient} from 'oci-objectstorage';
 import * as oci from 'oci-sdk';
-import {Region } from 'oci-common';
 import {common, ConfigFileAuthenticationDetailsProvider} from "oci-sdk";
-import { createReadStream, statSync } from "fs";
-import { NodeFSBlob } from "oci-objectstorage";
 import * as os from 'oci-objectstorage';
 import * as st from 'node:stream'
 

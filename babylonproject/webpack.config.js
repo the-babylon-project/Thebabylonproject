@@ -7,9 +7,9 @@ const appDirectory = fs.realpathSync(process.cwd());
 module.exports = {
     entry: path.resolve(appDirectory, "src/app.ts"),
     output: {
-        path: path.resolve(appDirectory, "app"),
+        path: path.resolve(appDirectory, "dist"),
         //name for the js file that is created/compiled in memory
-        filename: 'js/babylonBundle.js'
+        filename: 'js/babylonProjectBundle.js'
     },
     resolve: {
         // extensions: [".ts"]
