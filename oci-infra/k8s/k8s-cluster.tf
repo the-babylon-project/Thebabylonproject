@@ -77,3 +77,59 @@ resource "oci_network_load_balancer_listener" "babylon_nlb_listener" {
   port                     = "80"
   protocol                 = "TCP"
 }
+
+resource "kubernetes_deployment" "colyseus" {
+  metadata {
+    name = "colyseus-server"
+    namespace = kubernetes_namespace.babylon_namespace.id
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "colyseus-server"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "colyseus-server"
+        }
+      }
+
+      spec {
+        container {
+          name = "colyseus-server"
+          image = "<colyseus-docker-image>"
+          ports {
+            container_port = 3000
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "colyseus" {
+  metadata {
+    name = "colyseus-service"
+    namespace = kubernetes_namespace.babylon_namespace.id
+  }
+
+  spec {
+    selector = {
+      app = "colyseus-server"
+    }
+
+    port {
+      name = "colyseus-port"
+      port = 3000
+      target_port = 3000
+    }
+
+    type = "ClusterIP"
+  }
+}
