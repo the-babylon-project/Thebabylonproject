@@ -26,11 +26,11 @@ export class WallObstacle {
         //load the wall to do something with it.
         this._loadWallObstacle(mesh, position);
         //sets the position param.
-        const light = new PointLight("wall light", this.mesh.getAbsolutePosition(), this._scene);
-        light.intensity = 4;
-        light.radius = 2;
-        light.diffuse = new Color3(0.16, 0.90, 0.80);
-        this._light = light;
+        // const light = new PointLight("wall light", this.mesh.getAbsolutePosition(), this._scene);
+        // light.intensity = 4;
+        // light.radius = 2;
+        // light.diffuse = new Color3(0.16, 0.90, 0.80);
+        // this._light = light;
     }
     public _loadWallObstacle(mesh: Mesh, position: Vector3): void {
         this.mesh.scaling = new Vector3(1, 1, 1);
@@ -40,11 +40,11 @@ export class WallObstacle {
     }
 
     public setEmissiveTexture(): void {
-        //for his game he uses this to light the lantern if the player hits it.
+        //light the boxob if its hit
 
         this.isTouched = true;
         //swap texture
         this.mesh.material = this._lightmtl;
-        this._light.intensity = 30;
+        // this._light.intensity = 30;
     }
 }

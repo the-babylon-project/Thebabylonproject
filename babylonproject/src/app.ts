@@ -1,7 +1,8 @@
 import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
 import "@babylonjs/loaders/glTF";
-//TODO: fix raycast mechanic that stops forward motion.
+
+//TODO: seed map
 //TODO: Change camera or do different implementations.
 //TODO: textures and different lighting.
 //TODO: set up win lose checkCollisions (fairly ez)
@@ -304,11 +305,11 @@ class App {
         scene.detachControl();
 
         //IBL (image based lighting) - to give scene an ambient light
-        const envHdri = CubeTexture.CreateFromPrefilteredData("textures/envtext.dds", scene);
-        envHdri.name = "env";
-        envHdri.gammaSpace = false;
-        scene.environmentTexture = envHdri;
-        scene.environmentIntensity = 0.04;
+        // const envHdri = CubeTexture.CreateFromPrefilteredData("textures/envtext.dds", scene);
+        // envHdri.name = "env";
+        // envHdri.gammaSpace = false;
+        // scene.environmentTexture = envHdri;
+        // scene.environmentIntensity = 0.04;
 
         //--INPUT--
         this._input = new PlayerInput(scene, this._ui); //detect keyboard/mobile inputs
@@ -458,17 +459,24 @@ class App {
             material.emissiveColor = new Color3(1, .67, .44);
             material.specularColor = new Color3(0, 0, 1);
             material.diffuseTexture = new Texture("textures/envtext.dds", scene);
-            const glowLayer = new GlowLayer('glow', scene);
-            glowLayer.addIncludedOnlyMesh(playerSphere);
-            glowLayer.intensity = 1.0;
-            glowLayer.customEmissiveColorSelector = (mesh, subMesh, material, result) => {
-                result.set(0.4, 0.7, 1.0, 1.0);
-            };
-            glowLayer.blurKernelSize = 128;
+            playerSphere.material = material;
+            // const glowLayer = new GlowLayer('glow', scene);
+            // glowLayer.intensity = 1.0;
+            // glowLayer.customEmissiveColorSelector = (mesh, subMesh, material, result) => {
+            //     result.set(0.4, 0.7, 1.0, 1.0);
+            // };
+            // glowLayer.blurKernelSize = 128;
+            // glowLayer.addIncludedOnlyMesh(playerSphere);
             playerSphere.parent = outer;
             playerSphere.isPickable = false;
 
-                //return the mesh
+            //test: attach hemispheric light to player
+            var playerLight = new HemisphericLight('playerLight', new Vector3(0,1,0), scene);
+            playerLight.parent = playerSphere;
+            console.log(playerLight)
+
+
+            //return the mesh
                 return {
                     mesh: outer as Mesh,
                 }

@@ -8,15 +8,8 @@ import {
     ExecuteCodeAction,
     ActionManager,
     Observable,
-    FramingBehavior,
-    ArcRotateCamera,
     Scalar,
     Quaternion,
-    FreeCamera,
-    CannonJSPlugin,
-    PhysicsImpostor,
-    FollowCamera,
-    ArcFollowCamera
 } from "@babylonjs/core";
 import { PlayerInput } from "./inputController";
 
@@ -37,18 +30,17 @@ export class PlayerSphere extends TransformNode {
     private _inputAmt: number;
     //grav, ground detect, climbing
     private _gravity: Vector3 = new Vector3();
-    private _grounded: boolean;
     private _climbing: boolean;
     private _forwardMotion: Vector3 = new Vector3(); //may have to change to Vector 3 to establish z variable.
     //constants
     PLAYER_SPEED
 
-    private static readonly PLAYER_SPEED: number = .9;
-    private static readonly CLIMB_FORCE: number = 1; //this will be set to a maximum, so we will climb until max is hit
-    private static readonly GRAVITY: number = -2.8; //this can be set to our constant downward motion
-    private static readonly FORWARD: number = 1;
-    private static readonly DOWN_TILT: Vector3 = new Vector3(0.8290313946973066, 0, 0);
-    private static readonly ORIGINAL_TILT: Vector3 = new Vector3(0.5934119456780721, 0, 0);
+    private static readonly PLAYER_SPEED: number = 2;
+    private static readonly CLIMB_FORCE: number = 1;//this will be set to a maximum, so we will climb until max is hit
+    private static readonly MAX_CLIMB_FORCE: number = 4
+    private static readonly GRAVITY: number = -1; //this can be set to our constant downward motion
+    private static readonly MAX_GRAVITY: number = -4
+    private static readonly FORWARD: number = .7;
 
     //Player
     // Sphere variables
@@ -101,10 +93,6 @@ export class PlayerSphere extends TransformNode {
                 }
             )
         );
-        // THIS IS ANOTHER ACTION BEING REGISTERED, I.E. ANOTHER CONDITION WHICH CAN CAUSE A LOSS FOR US, WHICH IS
-        // LEAVING PLAYZONE.
-        // if Player
-        // Sphere falls through "world", reset the position to the last safe grounded position
         this.mesh.actionManager.registerAction(
             new ExecuteCodeAction({
                     trigger: ActionManager.OnIntersectionEnterTrigger,
@@ -125,94 +113,52 @@ export class PlayerSphere extends TransformNode {
         //         this._movingSfx.isPlaying = false;
         //     }
         // })
-
         this._input = input;
     }
 
 
-    //--GROUND DETECTION--
-    //RAYCASTING IS THE MAIN WAY OF DETECTING THE GROUND BENEATH Player
-    // Sphere...POSSIBLE WINDOW IN FRONT OF SPHERE.
-    //THIS IS A BIG ONE AND MAY SOLVE OUR OBSTACLE PROBLEM
-    //SET RAYCAST DIRECTLY IN FRONT OF SPHERE. MAYBE WE CAN CUSTOMIZE RAY SIZE LIKE 4X4.
-    //Send raycast to the floor to detect if there are any hits with meshes below the character
-    private _boxObRaycast(offsetx: number, offsetz: number, raycastlen: number): Vector3 {
-
+    //--BOX OBSTACLE DETECTION--
+    //this will be used to detect the box obstacle in front of the player to do 1) confirm they went through, 2)
+    // cause an effect when the box is hit..
+    private _boxObRaycast(): Vector3 {
 
         //defined which type of meshes should be pickable
         let predicate = function (mesh) {
             return mesh.isPickable && mesh.isEnabled() && mesh.name === 'boxOb';
         }
 
-        let raycastOrigin = this.mesh.position.clone();
+
+        let raycastOrigin = this.mesh.position.clone();//might need to y+.5 to center.
         let ray = new Ray(raycastOrigin, Vector3.Forward(), 3);
 
+        console.log("scene", this.scene, "this.mesh", this.mesh)
 
         let pick = this.scene.pickWithRay(ray, predicate);
+        pick.originMesh = this.mesh;
+        console.log("before pick hit: (pick)", pick)
 
         if (pick.hit) { //we could maybe stop gravity right in front of box.
+            console.log("test pick.hit true")
             return pick.pickedPoint;
             // TODO: will be used to say, ok if box is in front of us, bring the camera around and behind us very quick.
             //todo: like alpha, beta == 0.normalize(). camera z+++;
         }
     }
 
-    private _checkBoxOb(): boolean {
+    private _boxObIntersects(): boolean {
 
-        let predicate = function (mesh) {
-            return mesh.isPickable && mesh.isEnabled();
-        }
-
-        let raycast = new Vector3(this.mesh.position.x, this.mesh.position.y + 0.5, this.mesh.position.z + .25);
-        let ray = new Ray(raycast, Vector3.Up().scale(-1), 1.5);
-        let pick = this.scene.pickWithRay(ray, predicate);
-
-        let raycast2 = new Vector3(this.mesh.position.x, this.mesh.position.y + 0.5, this.mesh.position.z - .25);
-        let ray2 = new Ray(raycast2, Vector3.Forward().scale(1), 1.5);
-        let pick2 = this.scene.pickWithRay(ray2, predicate);
-
-        if (pick.hit && !pick.getNormal().equals(Vector3.Up())) {
-            return true;
-
-        }
-        if (pick2.hit && !pick2.getNormal().equals(Vector3.Forward())) {
-            if (pick2.pickedMesh.name.includes("boxOb")) {
-                return true;
-            }
-        }
-    }
-
-    private _isGrounded(): boolean {//these two things could be used to detect if sphere is climbing to determine if gravity should be applied,
-        //doing this could enable us to begin our downward falling reaction to be gradual after the climb and not constant.
-        if (this._boxObRaycast(0, 0, .6).equals(Vector3.Zero())) {
-            return false;
-        } else {
+        if (this._boxObRaycast() == this.mesh.position) {
             return true;
         }
     }
-
     //
-    private _updateGroundDetection(): void {
+    private _updateMotion(): void {
         this._deltaTime = this.scene.getEngine().getDeltaTime() / 1000.0;
-        this._gravity = this._gravity.addInPlace(Vector3.Up().scale(this._deltaTime * PlayerSphere.GRAVITY));
-        this._grounded = false;
-        // if not grounded
 
-        if (!this._isGrounded()) {
-            //if the body isnt grounded, check if it's on a slope and was either falling or walking onto it
-            if (this._gravity.y <= 0 && this._checkBoxOb()) {
-                console.log("ping")
-                this._forwardMotion.z = 0;
-                this._gravity.y = 0;
-                this._grounded = true;
-            } else {
-                //keep applying gravity
-                this._forwardMotion = this._gravity.addInPlace(Vector3.Forward().scale(this._deltaTime + PlayerSphere.FORWARD))
-                this._gravity = this._gravity.addInPlace(Vector3.Up().scale(this._deltaTime * PlayerSphere.GRAVITY));
-                console.log('grav log', this._gravity)
-                this._grounded = false;
-            }
-        }
+        //apply downward and forward motion
+        this._forwardMotion = this._gravity.addInPlace(Vector3.Forward().scale(this._deltaTime + PlayerSphere.FORWARD))
+        this._gravity = this._gravity.addInPlace(Vector3.Up().scale(this._deltaTime * PlayerSphere.GRAVITY));
+        // console.log('grav log', this._gravity)
         //limit the max forward motion
         if (this._forwardMotion.z > PlayerSphere.FORWARD) {
             this._forwardMotion.z = PlayerSphere.FORWARD;
@@ -222,25 +168,23 @@ export class PlayerSphere extends TransformNode {
         if (this._gravity.y < -PlayerSphere.CLIMB_FORCE) {
             this._gravity.y = -PlayerSphere.CLIMB_FORCE;
         }
-
-        if (this._gravity.y < 0 && this._climbing) {
-            this._climbing = true;
-        }
-
-        //update our movement to account for climbing
-        this.mesh.moveWithCollisions(this._moveDirection.addInPlace(this._gravity));
-        if (this._climbing) {
-            this._gravity.y = 0;
-            this._climbing = false;
-        }
         //space key detection
         if (this._input.spaceKeyDown) {
-            this._gravity.y = PlayerSphere.CLIMB_FORCE;
+            this._climbing = true;
+        } else{
+            this._climbing = false;
         }
+        // update our movement to account for climbing
+        if (this._climbing) {
+            this._gravity.y = PlayerSphere.CLIMB_FORCE;
+        } else{
+            this._gravity.y = PlayerSphere.GRAVITY;
+        }
+        this.mesh.moveWithCollisions(this._moveDirection.addInPlace(this._gravity));
+        //this could be used for boundary enforcement
     }
 
     private _updateFromControls(): void {
-        //we're going to set up all the Player
         // Sphere controls to climb, and to left and right.
         this._deltaTime = this.scene.getEngine().getDeltaTime() / 1000.0;
 
@@ -269,34 +213,50 @@ export class PlayerSphere extends TransformNode {
         } else {
             this._inputAmt = inputMag;
         }
-        //final movement that takes into consideration the inputs
-        this._moveDirection = this._moveDirection.scaleInPlace(this._inputAmt * PlayerSphere.PLAYER_SPEED);
 
+
+        // climb feature
+        if (this._input.spaceKeyDown && this._gravity.y < PlayerSphere.MAX_CLIMB_FORCE ) {
+            // Increase climb force
+            this._gravity.y += this._deltaTime * PlayerSphere.MAX_CLIMB_FORCE * 2;
+            this._climbing = true;
+        } else {
+            // Fall feature
+            if (this._gravity.y > PlayerSphere.MAX_GRAVITY) {
+                // Increase gravity
+                this._gravity.y += this._deltaTime * PlayerSphere.MAX_GRAVITY * 2;
+                this._climbing = false;
+            } else {
+                // Max gravity reached
+                this._gravity.y = PlayerSphere.MAX_GRAVITY;
+                this._climbing = false;
+            }
+        }
+
+
+    //final movement that takes into consideration the inputs
+        if (!this._climbing){
+            this._moveDirection = this._moveDirection.scaleInPlace(this._inputAmt * PlayerSphere.PLAYER_SPEED);
+        } else {
+            this._moveDirection = this._moveDirection.scaleInPlace(this._inputAmt * PlayerSphere.CLIMB_FORCE);
+        }
+
+        //might not need
         let input = new Vector3(this._input.horizontalAxis, this._input.verticalAxis, 0); //along which axis is the direction
         if (input.length() == 0) {//if there's no input detected, prevent rotation and keep PlayerSphere in same rotation
             return;
         }
-
         //rotation based on input & the camera angle
         let angle = Math.atan2(this._input.horizontalAxis, this._input.verticalAxis);
         angle += this._camRoot.rotation.y;
         let targ = Quaternion.FromEulerAngles(0, angle, 0);
         this.mesh.rotationQuaternion = Quaternion.Slerp(this.mesh.rotationQuaternion, targ, 10 * this._deltaTime);
     }
-
-    // private _hasBoxHit(): boolean { //dont think i need ray cast but what i can do with this instead of checking all
-    //     // collisions is do a has box hit to detect our box and do something with it like:
-    //     //light it up, set it's as a position check for win/lose or something
-    //     // if (this._floorRaycast(0, 0, 99).equals(Vector3.Zero())) {
-    //     //     return false;
-    //     // } else {
-    //     //     return true;
-    //     // }
-    // }
     //--GAME UPDATES--
     private _beforeRenderUpdate(): void {
+        this._boxObIntersects();
         this._updateFromControls();
-        this._updateGroundDetection();
+        this._updateMotion();
     }
 
     activatePlayerCamera(): UniversalCamera {
@@ -337,7 +297,7 @@ export class PlayerSphere extends TransformNode {
 
         //our actual camera that's pointing at our root's position
         this.camera = new UniversalCamera("playerCamera", new Vector3(0, 5, -7), this.scene);
-        this.camera.fov = 2;
+        this.camera.fov = 1.35;
 
         this.camera.speed = 25;
         this.camera.inertia = 5;
