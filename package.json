@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@babylonjs/post-processes": "^5.47.0",
+    "@babylonjs/procedural-textures": "^5.47.0",
+    "babylonjs": "^5.47.0",
+    "babylonjs-procedural-textures": "^5.47.0"
+  }
+}
