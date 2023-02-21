@@ -15,7 +15,7 @@ import {
     Vector3,
     MultiMaterial,
     Texture,
-    BaseTexture, Material, MeshBuilder, AbstractMesh,
+    BaseTexture, Material, MeshBuilder, AbstractMesh, CubeTexture,
 } from "@babylonjs/core";
 import {SkyMaterial} from "@babylonjs/materials";
 import "@babylonjs/procedural-textures";
@@ -32,6 +32,7 @@ export class Environment {
     private _ceiling: Mesh;
     private _leftWall: Mesh;
     private _rightWall: Mesh;
+    private _currentZ: number;
 
     //Meshes
     private _boxObs: Array<WallObstacle>; //this will be used to _checkBoxObs with action manager
@@ -46,79 +47,79 @@ export class Environment {
         lightmtl.emissiveColor = new Color3(0.8784313725490196, 0.7568627450980392, 0.6235294117647059);
         lightmtl.metallic = 6;
         this._lightmtl = lightmtl;
+        this._currentZ = 150;
     }
-
     public async load() {
-        //load course
         const assets = await this._loadAssets();
+
+        let ceiling;
+        let rightWall;
+        let leftWall;
+        let ground;
+        assets.allMeshes.forEach(tom => {
+            if (tom.name.includes("right")){
+                tom.checkCollisions = true;
+                rightWall = tom;
+            } else if(tom.name.includes("left")) {
+                tom.checkCollisions = true;
+                tom.isPickable = false;
+                leftWall = tom;
+            } else if(tom.name.includes("ceiling")){
+                tom.checkCollisions = true;
+                tom.isPickable = false;
+                ceiling = tom;
+            } else if (tom.name === "ground"){
+                tom.checkCollisions = true;
+                tom.isPickable = false;
+                ground = tom;
+            }
+        })
+        const boxObMaterial = new StandardMaterial("boxObMaterial", this._scene);
         const boxObHolder = new TransformNode("boxObHolder", this._scene);
-        assets.allMeshes.forEach(m => {
-            m.receiveShadows = true;
-            m.checkCollisions = true;
-            if (m.name === ("ground")) {
-                m.checkCollisions = true;
-                m.isPickable = true;
-                this._ground = m as Mesh;
-            }
-            if (m.name.includes("destination")) {
-                if (!this._destinations.length){
-                    m.checkCollisions = true;
-                    m.isPickable = true;
-                    this._destinations.push(m)
-                } else m.dispose();
-            }
-            if (m.name == "leftWall" || m.name == "rightWall" || m.name == "ceiling") {
-                //dont check for collisions, dont allow for raycasting
-                m.checkCollisions = true;
-                m.isPickable = true;
-                if (m.name === "leftWall"){
-                    this._leftWall = m as Mesh;
-                } else if (m.name === "rightWall"){
-                    this._rightWall = m as Mesh;
-                } else {
-                    this._ceiling = m as Mesh;
-                }
-            }
-            //areas that will use box collisions
+
+        boxObMaterial.diffuseTexture = new Texture("./textures/transparent.png", this._scene);
+        boxObMaterial.opacityTexture = boxObMaterial.diffuseTexture;
+        boxObMaterial.alpha = 0.75; // set the transparency of the material
+
+        assets.result.forEach(m => {
             if (m.name.includes("WallOb")) {
                 m.checkCollisions = true;
                 m.isPickable = false;
             }
             if (m.name === ("boxOb")) {
-                m.checkCollisions = true;
-                m.isVisible = false;
+                m.checkCollisions = false;
+                m.isVisible = true;
                 m.isPickable = true;
-                console.log('test for boxob', m)
-            }
-        });
-        assets.boxChildren.forEach(mesh => {
-            if (mesh instanceof Mesh) {
-
-                mesh.setParent(boxObHolder);
-                mesh.checkCollisions = false;
-                mesh.isVisible = false;
-                mesh.isPickable = true;
-                let newWallOb = new WallObstacle(this._lightmtl,mesh, this._scene, mesh.getAbsolutePosition());
+                m.material = boxObMaterial;
+                m.setParent(boxObHolder);
+                let newWallOb = new WallObstacle(this._lightmtl, m , this._scene, m.getAbsolutePosition());
                 this._boxObs.push(newWallOb);
-                // newWallOb.boxObHolder.isPickable = true; // make the boxObHolder pickable
-                newWallOb.mesh.isPickable = true; // make the mesh pickable
-                 // dispose of the parent todo
             }
         });
-        const probe = new ReflectionProbe("skyProbe", 512, this._scene, true);
-        probe.renderList.push(this._ground);
         const groundMaterial = new PBRMaterial("groundMaterial", this._scene);
-        groundMaterial.metallic = Math.random();
-        groundMaterial.roughness = 0.8;
-        groundMaterial.albedoColor = new Color3(Math.random(), 0.8, 0.87);
-        groundMaterial.reflectionTexture = probe.cubeTexture;
-        groundMaterial.microSurface = 1.0;
-
+        const probe = new ReflectionProbe("skyProbe", 512, this._scene);
         const randoMat = this._createRandomSky(this._scene);
-        this._leftWall.material = randoMat;
-        this._rightWall.material = randoMat;
-        this._ceiling.material = randoMat;
-        this._ground.material = groundMaterial;
+        probe.attachToMesh(ground);
+
+        groundMaterial.metallic = 1;
+        groundMaterial.roughness = 1;
+        groundMaterial.albedoColor = new Color3(Math.random(), 0.8, 0.87);
+        // groundMaterial.microSurface = 1.0;
+        groundMaterial.useRoughnessFromMetallicTextureAlpha = false;
+        groundMaterial.useRoughnessFromMetallicTextureGreen = true;
+        groundMaterial.useMetallnessFromMetallicTextureBlue = true;
+        groundMaterial.reflectionTexture = CubeTexture.CreateFromPrefilteredData("/textures/3d.dds", this._scene);
+        groundMaterial.metallicTexture = groundMaterial.reflectionTexture;
+
+        leftWall.material = randoMat;
+        this._leftWall = leftWall;
+        rightWall.material = randoMat;
+        this._rightWall = rightWall;
+        ceiling.material = randoMat;
+        this._ceiling = ceiling;
+        ground.material = groundMaterial;
+
+        this._ground = ground;
     }
 
     //Load all necessary meshes for the environment
@@ -126,117 +127,114 @@ export class Environment {
         //TODO: pick out the parent 'Mesh' of these, when we call this in load, it will iterate through each parent mesh
         // and add the params receive shadows, is pickable, and checkCollisions..
 
-        const res = await SceneLoader.ImportMeshAsync(null, "./models/", "envSetting_200+10.glb", this._scene);
-        const result = await this._createRandomCourse(this._scene);
-        let env = res.meshes[0]; //gets total env
+        const trackOnly = await SceneLoader.ImportMeshAsync(null, "./models/", "track_only.glb", this._scene);
+        const result = await this._createRandomCourse();
+        let env = trackOnly.meshes[0]; //gets total env
         let allMeshes = env.getChildMeshes(false); //this doesn't include 'parent wall'.
-        let boxChildren = allMeshes.filter((mesh) => mesh.name === "boxOb");
+        // let boxChildren = allMeshes.filter((mesh) => mesh.name === "boxOb");
         return {
             //return the track and the wall obstacles as meshes.
             env: env,
             allMeshes: allMeshes,
-            boxChildren: boxChildren,
             result: result,
         }
     }
+    private wallStyleOne(scene: Scene, currentZ: number): Mesh[] {
+        currentZ = this._currentZ;
+        let meshReturn: Mesh[] = [];
+        // creates up and down only walls
+        // Generate random x and y positions for the center of the window
+        const randomX = Math.floor(Math.random() * 89) - 44;
+        const startPointLeft = randomX - 6;
+        const startPointRight = randomX + 6;
 
-    private async _createRandomCourse(scene: Scene): Promise<Mesh[]> {
-        console.log('top crc')
+        //add currentZ increase functionality
+        // Calculate the positions and dimensions of the four walls
+        const leftWallWidth = Math.abs(-50 - startPointLeft);
+        const leftWallX = Math.round(-50 + (leftWallWidth / 2));
+
+        const rightWallWidth = Math.abs(50 - startPointRight);
+        const rightWallX = 50 - (rightWallWidth / 2);
+
+        // Create the four walls for this iteration
+        const leftWallOb = MeshBuilder.CreateBox("leftWallOb", { width: leftWallWidth, height: 100, depth: 10  }, scene);
+        let absPosLeft = new Vector3(leftWallX, 100, currentZ);
+        leftWallOb.setAbsolutePosition(absPosLeft);
+
+        const rightWallOb = MeshBuilder.CreateBox("rightWallOb", { width: rightWallWidth, height: 100, depth: 10  }, scene);
+        let absPosRight = new Vector3(rightWallX, 100, currentZ);
+        rightWallOb.setAbsolutePosition(absPosRight);
+
+        const boxOb = MeshBuilder.CreatePlane('boxOb', {width: 12, height: 100}, scene)
+        let absPosBox = new Vector3(randomX, 100, currentZ)
+        boxOb.setAbsolutePosition(absPosBox);
+
+        meshReturn.push(leftWallOb, rightWallOb, boxOb);
+        return meshReturn;
+    }
+    private wallStyleTwo(scene : Scene, currentZ: number): Mesh[] {
+        currentZ = this._currentZ;
+        let meshReturn: Mesh[] = [];
+        // creates top and bottom walls only
+        // Generate random x and y positions for the center of the window
+        const randomX = Math.floor(Math.random() * 89) - 44;
+        const randomY = Math.floor(Math.random() * 85) + 58;
+
+        const startPointTop = randomY + 6;
+        const startPointBot = randomY - 6;
+
+        const topWallHeight = 150 - startPointTop;
+        const topWallY = 150 - (topWallHeight / 2);
+
+        const bottomWallHeight = startPointBot - 50 ;
+        const bottomWallY = 25 + (startPointBot / 2);
+
+        const topWallOb = MeshBuilder.CreateBox("topWallOb", { width: 100, height: topWallHeight, depth: 10  }, scene);
+        let absPosTop = new Vector3(0, topWallY, currentZ);
+        topWallOb.setAbsolutePosition(absPosTop);
+
+        const bottomWallOb = MeshBuilder.CreateBox("bottomWallOb", { width: 100, height: bottomWallHeight, depth: 10  }, scene);
+        let absPosBot = new Vector3(0, bottomWallY, currentZ);
+        bottomWallOb.setAbsolutePosition(absPosBot);
+
+        const boxOb = MeshBuilder.CreatePlane("boxOb", { height: 12, width: 100}, scene);
+        let absPosBox = new Vector3(0, randomY, currentZ)
+        boxOb.setAbsolutePosition(absPosBox);
+
+        meshReturn.push(topWallOb, bottomWallOb, boxOb);
+        return meshReturn;
+    }
+    private async _createRandomCourse(): Promise<Mesh[]> {
+
         const meshes: Mesh[] = [];
-        function wallStyleOne(scene: Scene, currentZ: number): Mesh {
-            console.log('top styleone')
+        //MODIFY THIS TO ACCOMPLISH SETTING STAGE
+        let distanceZ = this._currentZ;
+        let newDistanceZ;
+        let tempZ;
+        while (this._currentZ < 15500) {
+            newDistanceZ = distanceZ;
+            const randomEvenOdd = Math.floor(Math.random() *100);
+            if (randomEvenOdd % 2 == 0){
+                let meshReturn = this.wallStyleOne(this._scene, this._currentZ)
+                meshReturn.forEach(m => {
+                    meshes.push(m);
+                });
 
-            // creates up and down only walls
-            // Generate random x and y positions for the center of the window
-            const randomX = Math.floor(Math.random() * 89) - 44;
-            const startPointLeft = randomX - 6;
-            const startPointRight = randomX + 6;
-
-            //add currentZ increase functionality
-            // Calculate the positions and dimensions of the four walls
-            const leftWallWidth = Math.abs(-50 - startPointLeft);
-            const leftWallX = Math.round(-50 + (leftWallWidth / 2));
-
-            const rightWallWidth = Math.abs(50 - startPointRight);
-            const rightWallX = 50 - (rightWallWidth / 2);
-
-            // Create the four walls for this iteration
-            const leftWallOb = MeshBuilder.CreateBox("leftWallOb", { width: leftWallWidth, height: 100, depth: 3  }, scene);
-            leftWallOb.position.x = leftWallX;
-            leftWallOb.position.y = 100;
-            leftWallOb.position.z = currentZ;
-
-            const rightWallOb = MeshBuilder.CreateBox("rightWallOb", { width: rightWallWidth, height: 100, depth: 3  }, scene);
-            rightWallOb.position.x = rightWallX;
-            rightWallOb.position.y = 100;
-            rightWallOb.position.z = currentZ;
-
-            const boxOb = MeshBuilder.CreatePlane('boxOb', {width: 12, height: 100}, scene)
-            boxOb.position = new Vector3(randomX, 100, currentZ)
-            boxOb.isVisible = false;
-            return boxOb;
-        }
-        function wallStyleTwo(scene: Scene, currentZ: number): Mesh {
-            console.log('top styletwo')
-
-            // creates top and bottom walls only
-            // Generate random x and y positions for the center of the window
-            const randomX = Math.floor(Math.random() * 89) - 44;
-            const randomY = Math.floor(Math.random() * 85) + 58;
-
-            const startPointTop = randomY + 6;
-            const startPointBot = randomY - 6;
-
-            const topWallHeight = 150 - startPointTop;
-            const topWallY = 150 - (topWallHeight / 2);
-
-            const bottomWallHeight = startPointBot - 50 ;
-            const bottomWallY = 25 + (startPointBot / 2);
-
-            const topWallOb = MeshBuilder.CreateBox("topWallOb", { width: 100, height: topWallHeight, depth: 3  }, scene);
-            topWallOb.position = new Vector3(0, topWallY, currentZ);
-
-            const bottomWallOb = MeshBuilder.CreateBox("bottomWallOb", { width: 100, height: bottomWallHeight, depth: 3  }, scene);
-            bottomWallOb.position = new Vector3(0, bottomWallY, currentZ);
-
-            const boxOb = MeshBuilder.CreatePlane("boxOb", { height: 12, width: 100}, scene);
-            boxOb.position = new Vector3(0, randomY, currentZ)
-            boxOb.isVisible = false;
-
-            return boxOb;
-        }
-        function createWallCourse(scene: Scene) {
-            console.log('top createwallcourse')
-
-            //MODIFY THIS TO ACCOMPLISH SETTING STAGE
-            let distanceZ = 200;
-            let currentZ = 200;
-            let newDistanceZ;
-            let tempZ;
-            while (currentZ < 15500) {
-                newDistanceZ = distanceZ;
-                const randomEvenOdd = Math.floor(Math.random() *100);
-                if (randomEvenOdd % 2 == 0){
-                    let meshReturn = wallStyleOne(this._scene, currentZ)
-                    meshes.push(meshReturn);
-                    console.log('after meshes.push', meshes, 'meshReturn', meshReturn)
-
-                }else{
-                    let meshReturn = wallStyleTwo(this._scene, currentZ)
-                    meshes.push(meshReturn);
-                    console.log('after meshes.push', meshes, 'meshReturn', meshReturn)
-                }
-                //increases distance by 10 every 1000 as sphere speeds up
-                currentZ = currentZ + newDistanceZ;
-                if (tempZ >= 1000) {
-                    distanceZ += 10;
-                    tempZ = 0;
-                } else {
-                    tempZ += newDistanceZ;
-                }
+            }else{
+                let meshReturn = this.wallStyleTwo(this._scene, this._currentZ)
+                meshReturn.forEach(m => {
+                    meshes.push(m);
+                });
+            }
+            //increases distance by 10 every 1000 as sphere speeds up
+            this._currentZ += newDistanceZ;
+            if (tempZ >= 1000) {
+                distanceZ += 10;
+                tempZ = 0;
+            } else {
+                tempZ += newDistanceZ;
             }
         }
-        createWallCourse(this._scene);
         return meshes;
     }
     private _createRandomSky(scene) {

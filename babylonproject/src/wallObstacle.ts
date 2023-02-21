@@ -34,16 +34,12 @@ export class WallObstacle {
     }
     public _loadWallObstacle(mesh: Mesh, position: Vector3): void {
         this.mesh.scaling = new Vector3(1, 1, 1);
-        this.mesh.isPickable = false; //so player goes through
-        this.mesh.setAbsolutePosition(position)
-
+        //add params to wall obstacle (boxOb) like isTouched.
+        this.isTouched = false;
     }
 
     public setEmissiveTexture(): void {
         //light the boxob if its hit
-
-        this.isTouched = true;
-        //swap texture
         this.mesh.material = this._lightmtl;
         // this._light.intensity = 30;
     }

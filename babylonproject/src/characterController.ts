@@ -131,14 +131,14 @@ export class PlayerSphere extends TransformNode {
         let raycastOrigin = this.mesh.position.clone();//might need to y+.5 to center.
         let ray = new Ray(raycastOrigin, Vector3.Forward(), 3);
 
-        console.log("scene", this.scene, "this.mesh", this.mesh)
+        // console.log("scene", this.scene, "this.mesh", this.mesh)
 
         let pick = this.scene.pickWithRay(ray, predicate);
         pick.originMesh = this.mesh;
-        console.log("before pick hit: (pick)", pick)
+        // console.log("before pick hit: (pick)", pick)
 
         if (pick.hit) { //we could maybe stop gravity right in front of box.
-            console.log("test pick.hit true")
+            // console.log("test pick.hit true")
             return pick.pickedPoint;
             // TODO: will be used to say, ok if box is in front of us, bring the camera around and behind us very quick.
             //todo: like alpha, beta == 0.normalize(). camera z+++;
