@@ -14,8 +14,8 @@ export class FFRoom extends Room<RoomState> {
         console.log("update received -> ");
         console.debug(JSON.stringify(data));
         const player = this.state.players.get(client.sessionId);
-        player.xPos = data["x"];
-        player.yPos = data['y'];
+        player.xPos = data["xPos"];
+        player.yPos = data['yPos'];
     });
     });
 

@@ -11,13 +11,15 @@
     "@babylonjs/loaders": "^5.46.0",
     "@babylonjs/serializers": "^5.46.0",
     "@testing-library/jest-dom": "^5.16.5",
+    "babylonjs-editor-webpack-progress": "1.0.3",
     "@testing-library/user-event": "^13.5.0",
+    "dotenv-webpack": "^8.0.1",
     "@types/jest": "^29.4.0",
     "@types/node": "^18.13.0",
     "auth0-spa-ts": "^1.13.11",
     "babylonjs-loaders": "^5.46.0",
     "cannon": "^0.6.2",
-    "colyseus.js": "^0.14.13",
+    "colyseus.js": "^0.15.0-preview.4",
     "dotenv": "^16.0.3",
     "oci-sdk": "^2.52.0",
     "path-browserify": "^1.0.1",
@@ -27,11 +29,9 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "clean": "rimraf build declaration dist",
-    "compile": "tsc -p .",
-    "build": "webpack --env production --mode production",
-    "watch": "webpack --env development --mode development --watch",
-    "webserver": "http-server -p 1338 -c-1"
+    "build": "webpack",
+    "start": "webpack serve",
+    "start:dev": "webpack serve --mode=development"
   },
   "devDependencies": {
     "@babylonjs/core": "^5.46.0",

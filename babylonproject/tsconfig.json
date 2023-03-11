@@ -1,25 +1,16 @@
 {
-  "compilerOptions": {
-      "target": "es5",
-      "module": "commonjs",
+    "compilerOptions": {
+      "target": "es6",
+      "module": "ESNext",
+      "moduleResolution": "node",
+      "noResolve": false,
+      "noImplicitAny": false,
       "sourceMap": true,
-      "declaration": true,
-      "outDir": "./build/src",
-      "declarationDir": "./declaration/src",
-      "experimentalDecorators": true,
-      "typeRoots": [
-          "node_modules/@types"
-      ],
-      "skipLibCheck": true,
+      "preserveConstEnums":true,
       "lib": [
-          "es2015.promise",
-          "es2015",
-          "dom"
-      ]
-  },
-  "exclude": [
-      "./node_modules",
-      "./build",
-      "../Server"
-  ]
-}
+        "dom",
+        "es6"
+      ],
+      "rootDir": "src"
+    }
+  }

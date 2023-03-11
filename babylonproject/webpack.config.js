@@ -1,72 +1,44 @@
 const path = require("path");
-const webpack = require("webpack");
-const editor = require("babylonjs-editor-webpack-progress");
-const Dotenv = require('dotenv-webpack');
+const fs = require('fs');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const appDirectory = fs.realpathSync(process.cwd());
 
-module.exports = (env, argv) => {
-	const entryPath = path.join(__dirname, "src/index.ts");
-	const package = require("./package.json");
-
-	console.log(`********* WEBPACK Dir Path: "${__dirname}" *********`);
-
-	let serverSettings = './server-settings/local.env';
-
-	if(env.production) {
-		serverSettings = './server-settings/remote.env';
-	}
-
-	console.log(`*** Server Settings Path: ${serverSettings} ***`);
-	
-	return {
-		// we output both a minified version & a non minified version on production build
-		entry: { "bundle": entryPath },
-		output: {
-			filename: `bundle.js`,
-			path: path.join(__dirname, "dist"),
-			library: "game",
-			libraryTarget: "umd",
-		},
-		module: {
-			rules: [
-				{
-					test: /\.ts?$/,
-					loader: "ts-loader",
-					exclude: [
-						path.join(__dirname, "node_modules"),
-						path.join(__dirname, "dist"),
-						path.join(__dirname, "projects"),
-						path.join(__dirname, "scenes"),
-					],
-				},
-				{
-					test: /\.fx?$/,
-					loader: "raw-loader",
-				},
-				{
-					test: /\.(woff|woff2|eot|ttf|otf)$/i,
-					type: 'asset/resource',
-				}
-			],
-		},
-		resolve: {
-			extensions: [".ts", ".js"],
-		},
-		plugins: [
-			new Dotenv({
-				path: serverSettings
-			}),
-			new webpack.BannerPlugin({
-				banner: `${package.name} ${package.version} ${new Date().toString()}`,
-			}),
-			new webpack.WatchIgnorePlugin({
-				paths: [/\.js$/, /\.d\.ts$/],
-			}),
-			editor.createProgressPlugin(new webpack.ProgressPlugin()),
-		],
-		optimization: {
-			minimize: false,
-			usedExports: true,
-		},
-		devtool: "source-map"
-	};
+module.exports = {
+    entry: path.resolve(appDirectory, "src/app.ts"),
+    output: {
+        path: path.resolve(appDirectory, "app"),
+        //name for the js file that is created/compiled in memory
+        filename: 'js/babylonBundle.js'
+    },
+    resolve: {
+        // extensions: [".ts"]
+        extensions: [".tsx", ".ts", ".js"]
+    },
+    devServer: {
+        host: '0.0.0.0',
+        port: 8080,
+        static: path.resolve(appDirectory, "public"), //tells webpack to serve from the public folder
+        // publicPath: '/',
+        hot: true
+    },
+    module: {
+        rules: [
+            // {test: /\.tsx?$/,
+            // loader: "ts-loader"}
+            {
+                test: /\.tsx?$/,
+                use: "ts-loader",
+                exclude: /node_modules/
+            },
+        ]
+    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            inject: true,
+            template: path.resolve(appDirectory, "public/index.html")
+        }),
+        new CleanWebpackPlugin()
+    ],
+    mode: "development"
 };
